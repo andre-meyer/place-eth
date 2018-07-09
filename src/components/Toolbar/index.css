@@ -1,0 +1,23 @@
+.toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 200px;
+
+  background: rgba(200, 200, 200, 0.6);
+  text-align: justify;
+  font-size: 14px;
+
+  z-index: 5;
+
+}
+
+
+.toolbar .inner {
+  padding: 8px 12px;
+}
+
+.title {
+  text-align: center;
+}
