@@ -69,7 +69,7 @@ export const resolveChunksAndPixels = async (instance, contracts) => {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(image, 0, 0, 0, 0, 128, 128)
     
-      return { canvas, chunk, x, y, creator }
+      return { image, canvas, chunk, x, y, creator }
     })
   )
 
