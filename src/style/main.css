@@ -13,3 +13,7 @@
 :global a, :global a:visited, :global a:hover, :global a:active {
   color: inherit;
 }
+
+:global * {
+  box-sizing: border-box;
+}

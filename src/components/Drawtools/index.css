@@ -1,0 +1,33 @@
+
+
+.drawtools {
+  position: absolute;
+  bottom: -60px;
+  left: 200px;
+  width: calc(100% - 200px);
+  background: red;
+  height: 60px;
+
+  background: rgba(168, 168, 168, 0.6);
+  transition: bottom .1s ease-in-out;
+  padding: 5px;
+}
+
+.drawtools.open {
+  bottom: 0;
+}
+
+.drawtools button {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  border: none;
+  width: 50px;
+  height: 50px;
+  margin-right: 5px;
+}
+
+.drawtools button:focus {
+  z-index: 5;
+}

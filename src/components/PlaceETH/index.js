@@ -2,6 +2,8 @@ import React from 'react'
 
 import Canvas from 'components/Canvas'
 import Toolbar from 'components/Toolbar'
+import ToolmodeSelector from 'components/ToolmodeSelector'
+import Drawtools from 'components/Drawtools'
 
 class PlaceETH extends React.Component {
   constructor(props) {
@@ -10,12 +12,17 @@ class PlaceETH extends React.Component {
     this.state = {
       selectedChunk: undefined,
       hoveringChunk: undefined,
-      toolMode: 'draw'
+      toolMode: 'draw',
+      drawOptions: {
+        colorIndex: 0,
+      }
     }
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
     this.handleHoverChunk = this.handleHoverChunk.bind(this)
     this.handleSetToolmode = this.handleSetToolmode.bind(this)
+
+    this.handleSelectColor = this.handleSelectColor.bind(this)
   }
 
   handleSelectChunk(chunk) {
@@ -30,6 +37,14 @@ class PlaceETH extends React.Component {
     this.setState({ toolMode })
   }
 
+  handleSelectColor(color) {
+    this.setState({
+      drawOptions: {
+        colorIndex: color,
+      },
+    })
+  }
+
   render() {
     return (
       <div>
@@ -38,10 +53,15 @@ class PlaceETH extends React.Component {
           onHoverChunk={this.handleHoverChunk}
           hoveringChunk={this.state.hoveringChunk}
           toolMode={this.state.toolMode}
+          drawOptions={this.state.drawOptions}
         />
         <Toolbar
           selectedChunk={this.state.selectedChunk}
         />
+        <ToolmodeSelector
+          onSelectToolmode={this.handleSetToolmode}
+        />
+        <Drawtools open={this.state.toolMode === 'draw'} onSelectColor={this.handleSelectColor} />
       </div>
     )
   }

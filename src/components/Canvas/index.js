@@ -8,6 +8,8 @@ import WithContract from 'WithContract'
 import { clamp } from './utils/math'
 import { eventToCanvasPos } from './utils/mouse'
 
+import { getColorForIndex } from 'utils/colors'
+
 import {
   resolveChunksAndPixels,
 } from 'api/placeeth'
@@ -19,12 +21,10 @@ class Canvas extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = {
-      mouseChunk: { x: 0, y: 0 },
-      mousePixel: { x: 0, y: 0 },
-      canvasOffset: { x: 0, y: 0 },
-      zoom: 1,
-    }
+    this.canvasOffset = { x: 0, y: 0 }
+    this.mousePixel = { x: 0, y: 0 }
+    this.mouseChunk = { x: 0, y: 0 }
+    this.zoom = 1
 
     this.mouseIsDown = false;
     this.mouseStartDragPos = undefined
@@ -46,17 +46,21 @@ class Canvas extends React.Component {
   }
 
   handleDragStart(evt) {
-    this.setState({ isDragging: true })
-
+    this.isDragging = true
+    
     const mousePosition = eventToCanvasPos(evt, this.ctx)
     this.mouseStartDragPos = { x: mousePosition.x, y: mousePosition.y }
+
+    this.renderOnCanvas()
   }
 
   handleDragStop(evt) {
-    this.setState({ isDragging: false })
-
+    this.isDragging = false
+    
     const mousePosition = eventToCanvasPos(evt, this.ctx)
     this.mouseStartDragPos = { x: mousePosition.x, y: mousePosition.y }
+
+    this.renderOnCanvas()
   }
 
   handleMouseMove(evt) {
@@ -67,28 +71,27 @@ class Canvas extends React.Component {
     const mousePosition = eventToCanvasPos(evt, this.ctx)
 
     // determine dragging offset
-    if (this.state.isDragging && this.mouseStartDragPos) {
+    if (this.isDragging && this.mouseStartDragPos) {
       const mouseMovePos = {
         x: this.mouseStartDragPos.x - mousePosition.x,
         y: this.mouseStartDragPos.y - mousePosition.y,
       }
 
-      this.setState({ canvasOffset: {
-        x: this.state.canvasOffset.x - Math.floor(mouseMovePos.x),
-        y: this.state.canvasOffset.y - Math.floor(mouseMovePos.y)}
-      })
-
+      this.canvasOffset = {
+        x: this.canvasOffset.x - Math.floor(mouseMovePos.x),
+        y: this.canvasOffset.y - Math.floor(mouseMovePos.y)
+      }
+      
       this.mouseStartDragPos = { x: mousePosition.x, y: mousePosition.y }
     }
     
     // determine mouse position over chunk
-    const chunkSize = 128 * this.state.zoom
-    const chunkX = Math.floor((mousePosition.x - this.state.canvasOffset.x - chunkSize / 2) / chunkSize)
-    const chunkY = Math.floor((mousePosition.y - this.state.canvasOffset.y - chunkSize / 2) / chunkSize)
+    const chunkSize = 128 * this.zoom
+    const chunkX = Math.floor((mousePosition.x - this.canvasOffset.x - chunkSize / 2) / chunkSize)
+    const chunkY = Math.floor((mousePosition.y - this.canvasOffset.y - chunkSize / 2) / chunkSize)
 
-    if (this.state.mouseChunk.x !== chunkX || this.state.mouseChunk.y !== chunkY) {
-      this.setState({ mouseChunk: { x: chunkX, y: chunkY } })
-
+    if (this.mouseChunk.x !== chunkX || this.mouseChunk.y !== chunkY) {
+      this.mouseChunk = { x: chunkX, y: chunkY }
       let foundChunk = undefined
       this.props.chunks.forEach((chunk) => {
         if (chunk.x === chunkX && chunk.y === chunkY) {
@@ -101,17 +104,16 @@ class Canvas extends React.Component {
     }
 
     // determine mouse pixel
-    const mousePixelX = Math.round((mousePosition.x - this.state.canvasOffset.x) / this.state.zoom) + 64
-    const mousePixelY = Math.round((mousePosition.y - this.state.canvasOffset.y) / this.state.zoom) + 64
+    const mousePixelX = Math.round((mousePosition.x - this.canvasOffset.x) / this.zoom) + 64
+    const mousePixelY = Math.round((mousePosition.y - this.canvasOffset.y) / this.zoom) + 64
 
     const mousePixel = {
       x: mousePixelX,
       y: mousePixelY,
     }
 
-    if (this.state.mousePixel.x !== mousePixel.x || this.state.mousePixel.y !== mousePixel.y) {
-      this.setState({ mousePixel })
-    }
+    this.mousePixel = mousePixel
+    this.renderOnCanvas()
   }
 
   handleClickChunk(evt) {
@@ -119,7 +121,7 @@ class Canvas extends React.Component {
       return false
     }
 
-    const { x: chunkX, y: chunkY } = this.state.mouseChunk
+    const { x: chunkX, y: chunkY } = this.mouseChunk
     let foundChunk = undefined
     this.props.chunks.forEach((chunk) => {
       if (chunk.x === chunkX && chunk.y === chunkY) {
@@ -137,10 +139,12 @@ class Canvas extends React.Component {
 
     const normalized = normalizeWheel(evt)
     const value = normalized.pixelY / 1000
-    const zoom = clamp(this.state.zoom + value, 0.2, 10)
-    if (this.state.zoom !== zoom) {
-      this.setState({ zoom })
+    const zoom = clamp(this.zoom + value, 0.2, 30)
+    if (this.zoom !== zoom) {
+      this.zoom = zoom
     }
+
+    this.renderOnCanvas()
   }
 
   renderOnCanvas() {
@@ -149,8 +153,7 @@ class Canvas extends React.Component {
     this.ctx.fillStyle = 'white'
     this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
 
-    const { x: offsetX, y: offsetY } = this.state.canvasOffset
-    const { x: highlightChunkX, y: highlightChunkY } = this.state.mouseChunk
+    const { x: offsetX, y: offsetY } = this.canvasOffset
 
     if (!this.props.chunks) {
       return
@@ -162,7 +165,7 @@ class Canvas extends React.Component {
     this.props.chunks.forEach((chunk) => {
       this.ctx.save()
       this.ctx.translate(offsetX, offsetY)
-      this.ctx.scale(this.state.zoom, this.state.zoom)
+      this.ctx.scale(this.zoom, this.zoom)
 
       this.ctx.drawImage(chunk.canvas, chunk.x * 128 - 64, chunk.y * 128 - 64)
 
@@ -170,18 +173,18 @@ class Canvas extends React.Component {
     })
 
     // when drawing, render pixel at current mouse position
-    if (this.props.toolMode === 'draw' && this.state.mouseChunk) {
+    if (this.props.toolMode === 'draw' && this.mouseChunk) {
       this.ctx.save()
 
       this.ctx.translate(offsetX, offsetY)
-      this.ctx.scale(this.state.zoom, this.state.zoom)
+      this.ctx.scale(this.zoom, this.zoom)
 
-      this.ctx.fillStyle = 'red'
+      this.ctx.fillStyle = getColorForIndex(this.props.drawOptions.colorIndex)
       //this.ctx.fillRect(Math.floor((this.state.mousePosition.x - offsetX) / this.state.zoom), Math.floor((this.state.mousePosition.y - offsetY) / this.state.zoom), 100, 100)
-      this.ctx.fillRect(this.state.mousePixel.x - 64, this.state.mousePixel.y - 64, 100, 100)
+      this.ctx.fillRect(this.mousePixel.x - 64, this.mousePixel.y - 64, 1, 1)
 
       this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'
-      this.ctx.strokeRect(this.state.mouseChunk.x * 128 + 64, this.state.mouseChunk.y * 128 + 64, 128, 128)
+      this.ctx.strokeRect(this.mouseChunk.x * 128 + 64, this.mouseChunk.y * 128 + 64, 128, 128)
 
       this.ctx.restore()
     }
@@ -218,7 +221,7 @@ class Canvas extends React.Component {
           className={cx(
             'canvas',
             this.props.toolMode,
-            { isDragging: this.state.isDragging }
+            { isDragging: this.isDragging }
           )}
           onMouseMove={this.handleMouseMove}
           onMouseDown={this.handleDragStart}
@@ -244,7 +247,6 @@ Canvas.defaultProps = {
   chunks: [],
 }
 
-let chunkAddresses = []
 export default WithContract(['ChunkManager', 'Chunk'], {
   onError: console.error,
   mapContractInstancesToProps: async (contractName, instance, props) => {

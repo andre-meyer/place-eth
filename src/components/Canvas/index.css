@@ -5,8 +5,12 @@
   image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
   image-rendering: pixelated;                 /* Awesome future-browsers       */
   -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
-  height: 100vh;
-  /*max-width: 80vw;*/
+  width: 100%;
+  height: auto;
+}
+
+.canvasWrapper {
+  padding-left: 200px;
 }
 
 .canvas.move {
@@ -19,8 +23,4 @@
 }
 .canvas.draw {
   cursor: crosshair;
-}
-
-.canvasWrapper {
-  padding-left: 200px;
 }

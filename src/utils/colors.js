@@ -18,3 +18,7 @@ export const getColorComponentsForIndex = (i) => {
     return dec | dec << 4
   })
 }
+
+export const getColors = () => {
+  return palette
+}
