@@ -55,11 +55,14 @@ export const getPixelsForChunk = async (chunk) => {
 
 export const resolveChunksAndPixels = async (instance, contracts) => {
   const chunkCount = (await instance.getChunkCount()).toNumber()
-  const chunks = await Promise.all(
+  const chunks = {}
+
+  await Promise.all(
     range(chunkCount).map(async (chunkIndex) => {
       const chunkAddress = await instance.chunks(chunkIndex)
       const chunk = await contracts.Chunk.at(chunkAddress)
       const [ x, y ] = (await chunk.position()).map(bigNum => bigNum.toNumber())
+      const chunkKey = `${x},${y}`
       const image = await getPixelsForChunk(chunk)
       const creator = await chunk.creator()
 
@@ -69,7 +72,7 @@ export const resolveChunksAndPixels = async (instance, contracts) => {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(image, 0, 0, 0, 0, 128, 128)
     
-      return { image, canvas, chunk, x, y, creator }
+      chunks[chunkKey] = { image, canvas, chunk, x, y, creator }
     })
   )
 

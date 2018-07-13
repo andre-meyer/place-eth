@@ -15,6 +15,11 @@ class PlaceETH extends React.Component {
       toolMode: 'draw',
       drawOptions: {
         colorIndex: 0,
+      },
+      changeListCounts: {
+        chunkCreations: 0,
+        chunkUpdates: 0,
+        pixelChanges: 0,
       }
     }
 
@@ -23,6 +28,7 @@ class PlaceETH extends React.Component {
     this.handleSetToolmode = this.handleSetToolmode.bind(this)
 
     this.handleSelectColor = this.handleSelectColor.bind(this)
+    this.handleUpdateCounts = this.handleUpdateCounts.bind(this)
   }
 
   handleSelectChunk(chunk) {
@@ -45,18 +51,31 @@ class PlaceETH extends React.Component {
     })
   }
 
+  handleUpdateCounts(chunkUpdates, pixelChanges, chunkCreations) {
+    this.setState({
+      changeListCounts: {
+        chunkCreations,
+        chunkUpdates,
+        pixelChanges,
+      }
+    })
+  }
+
   render() {
     return (
       <div>
         <Canvas
           onSelectChunk={this.handleSelectChunk}
           onHoverChunk={this.handleHoverChunk}
+          onUpdateCounts={this.handleUpdateCounts}
           hoveringChunk={this.state.hoveringChunk}
           toolMode={this.state.toolMode}
           drawOptions={this.state.drawOptions}
         />
         <Toolbar
+          toolMode={this.state.toolMode}
           selectedChunk={this.state.selectedChunk}
+          changeListCounts={this.state.changeListCounts}
         />
         <ToolmodeSelector
           onSelectToolmode={this.handleSetToolmode}

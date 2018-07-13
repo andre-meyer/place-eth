@@ -1,9 +1,10 @@
 .toolbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: 10px;
+  left: 10px;
+  bottom: 10px;
   width: 200px;
+  border-radius: 10px;
 
   background: rgba(200, 200, 200, 0.6);
   text-align: justify;
@@ -20,4 +21,14 @@
 
 .title {
   text-align: center;
+}
+
+.changeList {
+  background: rgb(174, 174, 174);
+  padding: 8px 6px;
+}
+
+.changeList .count {
+  font-size: 12px;
+  display: block;
 }

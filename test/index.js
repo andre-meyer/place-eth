@@ -83,7 +83,7 @@ contract('Chunk', (accounts) => {
     }
   })
 
-  it('is able to set a pixelboundary (testing 10 pixels in row)', async () => {
+  it('is able to set a pixelboundary', async () => {
     const chunk = await Chunk.at(chunkAddress)
     
     const boundaryIndex = 18 // boundary at 2, 1
@@ -101,18 +101,14 @@ contract('Chunk', (accounts) => {
       (h) => parseInt(leftPad(parseInt(h, 10).toString('2'), 4, '0'), 2).toString('16')
     ).reverse().join('') // right aligned in binary
 
-    const estimatedCost = await chunk.setPixelRow.estimateGas(rowIndex, `0x${pixelsInHex}`)
-    console.log(`    [GAS ESTIMATION]: 'chunk.setPixelRow' ${estimatedCost} GAS`)
-    await chunk.setPixelRow(rowIndex, `0x${pixelsInHex}`)
-    byte = await chunk.pixels(rowIndex)
+    const estimatedCost = await chunk.setPixelBoundary.estimateGas(boundaryIndex, `0x${pixelsInHex}`)
+    console.log(`    [GAS ESTIMATION]: 'chunk.setPixelBoundary' ${estimatedCost} GAS`)
+    await chunk.setPixelBoundary(boundaryIndex, `0x${pixelsInHex}`)
+    byte = await chunk.pixels(boundaryIndex)
 
-    for(let i = pixelIndex; i < pixelIndex + 32; i += 3) {
-      const x = (i % 128)
-      const y = Math.floor(i / 128)
-      const targetPixel = (await chunk.getPixel(x, y)).toString()
+    const pixelData = await chunk.getPixelData()
+    const pixelBoundary = pixelData[boundaryIndex].toString(16)
 
-      const indexInTransferedColors = i - pixelIndex
-      assert.strictEqual(pixelColors[indexInTransferedColors], targetPixel, `color at pixel (${x}, ${y}) => ${indexInTransferedColors} doesn't match`)  
-    }
+    assert.strictEqual(pixelsInHex, pixelBoundary, `colors at boundary index x: 2, y: 1 doesn't match`)  
   })
 })
