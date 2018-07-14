@@ -3,18 +3,12 @@ import PropTypes from 'prop-types'
 import classnames from 'classnames/bind'
 import normalizeWheel from 'normalize-wheel'
 
-import WithContract from 'WithContract'
-
 import { clamp } from './utils/math'
 import { eventToCanvasPos } from './utils/mouse'
 import { disablePixelSmoothing } from './utils/canvas'
 import { doesColorMatchAtIndex } from './utils/image'
 
 import { getColorForIndex, getColorComponentsForIndex} from 'utils/colors'
-
-import {
-  resolveChunksAndPixels,
-} from 'api/placeeth'
 
 import style from './index.css'
 const cx = classnames.bind(style)
@@ -23,9 +17,13 @@ class Canvas extends React.Component {
   constructor(props) {
     super(props)
 
+    if (props.badRef) {
+      props.badRef(this)
+    }
+
     this.state = {
       changeList: {
-        pixelsChanged: [],
+        boundariesChanged: [],
         chunksChanged: [],
         chunksCreated: [],
       }
@@ -40,7 +38,7 @@ class Canvas extends React.Component {
 
     this.drawSpace = {}
     this.touchedChunks = []
-    this.touchedPixels = []
+    this.touchedPixelBoundaries = []
     this.createdChunks = []
 
     this.mouseIsDown = false;
@@ -77,22 +75,22 @@ class Canvas extends React.Component {
     const mousePosition = eventToCanvasPos(evt, this.ctx)
     this.mouseStartDragPos = { x: mousePosition.x, y: mousePosition.y }
 
-    if (this.touchedPixels.length || this.touchedChunks.length) {
+    if (this.touchedChunks.length || this.touchedPixelBoundaries.length || this.touchedChunks.length) {
       let chunksChanged = [...this.state.changeList.chunksChanged, ...this.touchedChunks]
-      let pixelsChanged = [...this.state.changeList.pixelsChanged, ...this.touchedPixels]
+      let boundariesChanged = [...this.state.changeList.boundariesChanged, ...this.touchedPixelBoundaries]
       let chunksCreated = [...this.state.changeList.chunksCreated, ...this.createdChunks]
       // remove duplicates
       chunksChanged = chunksChanged.filter((chunkKey, index) => !chunksChanged.includes(chunkKey, index+1))
-      pixelsChanged = pixelsChanged.filter((pixelCoord, index) => !pixelsChanged.includes(pixelCoord, index+1))
+      boundariesChanged = boundariesChanged.filter((boundaryPos, index) => !boundariesChanged.includes(boundaryPos, index+1))
       chunksCreated = chunksCreated.filter((chunkKey, index) => !chunksCreated.includes(chunkKey, index+1))
 
       this.setState({
         chunksChanged,
-        pixelsChanged,
+        boundariesChanged,
         chunksCreated,
       })
 
-      this.props.onUpdateCounts(chunksChanged.length, pixelsChanged.length, chunksCreated.length)
+      this.props.onUpdateCounts(chunksChanged.length, boundariesChanged.length, chunksCreated.length)
     }
 
     this.renderOnCanvas()
@@ -190,7 +188,9 @@ class Canvas extends React.Component {
         }
 
         this.touchedChunks.push(chunkKey)
-        this.touchedPixels.push([mousePixel.x, mousePixel.y])
+
+        const pixelBoundaryKey = `${chunkKey},${mousePixel.x % 8},${Math.floor(mousePixel.y / 8)}`
+        this.touchedPixelBoundaries.push(pixelBoundaryKey)
       }
     }
 
@@ -210,8 +210,6 @@ class Canvas extends React.Component {
   }
 
   handleZoom(evt) {
-    evt.preventDefault()
-
     const normalized = normalizeWheel(evt)
     const value = normalized.pixelY / 1000
     const zoom = clamp(this.zoom + value, 0.2, 30)
@@ -220,6 +218,21 @@ class Canvas extends React.Component {
     }
 
     this.renderOnCanvas()
+  }
+
+  clearDrawSpace() {
+    this.drawSpace = {}
+    this.touchedChunks = []
+    this.touchedPixelBoundaries = []
+    this.createdChunks = []
+
+    this.setState({
+      chunksChanged: 0,
+      boundariesChanged: 0,
+      chunksCreated: 0,
+    })
+
+    this.props.onUpdateCounts(0, 0, 0)
   }
 
   renderOnCanvas() {
@@ -297,10 +310,12 @@ class Canvas extends React.Component {
     this.ctx = this.canvas.getContext('2d')
 
     window.addEventListener('resize', this.handleResize)
+    window.addEventListener('wheel', this.handleZoom, { passive: true, capture: true })
   }
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.handleResize)
+    window.removeEventListener('wheel', this.handleZoom)
   }
 
   initializeCanvas() {
@@ -337,7 +352,6 @@ class Canvas extends React.Component {
           onMouseUp={this.handleMouseUp}
           onMouseLeave={this.handleDragStop}
           onBlur={this.handleDragStop}
-          onWheel={this.handleZoom}
         />
       </div>
     )
@@ -356,14 +370,4 @@ Canvas.defaultProps = {
   chunks: {},
 }
 
-export default WithContract(['ChunkManager', 'Chunk'], {
-  onError: console.error,
-  mapContractInstancesToProps: async (contractName, instance, props) => {
-
-    if (contractName === 'ChunkManager') {
-      return {
-        chunks: await resolveChunksAndPixels(instance, props.contracts)
-      }
-    }
-  }
-})(Canvas)
+export default Canvas

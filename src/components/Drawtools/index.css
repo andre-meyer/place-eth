@@ -3,8 +3,8 @@
 .drawtools {
   position: absolute;
   bottom: -60px;
-  left: 200px;
-  width: calc(100% - 200px);
+  left: 220px;
+  right: 10px;
   background: red;
   height: 60px;
 
@@ -14,7 +14,7 @@
 }
 
 .drawtools.open {
-  bottom: 0;
+  bottom: 10px;
 }
 
 .drawtools button {

@@ -1,9 +1,20 @@
 import React from 'react'
+import Dropzone from 'react-dropzone'
+import Modal from 'react-modal'
 
 import Canvas from 'components/Canvas'
 import Toolbar from 'components/Toolbar'
 import ToolmodeSelector from 'components/ToolmodeSelector'
 import Drawtools from 'components/Drawtools'
+import ImageProcess from 'components/ImageProcess'
+
+import WithContract from 'WithContract'
+
+import {
+  resolveChunksAndPixels,
+} from 'api/placeeth'
+
+Modal.setAppElement('#root')
 
 class PlaceETH extends React.Component {
   constructor(props) {
@@ -12,15 +23,16 @@ class PlaceETH extends React.Component {
     this.state = {
       selectedChunk: undefined,
       hoveringChunk: undefined,
-      toolMode: 'draw',
+      toolMode: 'move',
       drawOptions: {
         colorIndex: 0,
       },
       changeListCounts: {
         chunkCreations: 0,
         chunkUpdates: 0,
-        pixelChanges: 0,
-      }
+        boundaryChanges: 0,
+      },
+      droppedImage: undefined,
     }
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
@@ -29,6 +41,19 @@ class PlaceETH extends React.Component {
 
     this.handleSelectColor = this.handleSelectColor.bind(this)
     this.handleUpdateCounts = this.handleUpdateCounts.bind(this)
+
+    this.handleCommitChanges = this.handleCommitChanges.bind(this)
+    this.handleRevertChanges = this.handleRevertChanges.bind(this)
+
+    this.handleDropFile = this.handleDropFile.bind(this)
+  }
+
+  handleDropFile(acceptedFiles) {
+    const file = acceptedFiles[0]
+
+    this.setState({
+      droppedImage: file,
+    })
   }
 
   handleSelectChunk(chunk) {
@@ -51,19 +76,37 @@ class PlaceETH extends React.Component {
     })
   }
 
-  handleUpdateCounts(chunkUpdates, pixelChanges, chunkCreations) {
+  handleUpdateCounts(chunkUpdates, boundaryChanges, chunkCreations) {
     this.setState({
       changeListCounts: {
         chunkCreations,
         chunkUpdates,
-        pixelChanges,
+        boundaryChanges,
       }
     })
   }
 
+  handleCommitChanges() {
+    this.canvasRef.clearDrawSpace()
+  }
+
+  handleRevertChanges() {
+    this.canvasRef.clearDrawSpace()
+  }
+
   render() {
     return (
-      <div>
+      <Dropzone
+        onDrop={this.handleDropFile}
+        disableClick
+        style={{position: "relative"}}
+      >
+        <Modal
+          isOpen={!!this.state.droppedImage}
+          contentLabel="Preparing your Image"
+        >
+         <ImageProcess file={this.state.droppedImage} /> 
+        </Modal>
         <Canvas
           onSelectChunk={this.handleSelectChunk}
           onHoverChunk={this.handleHoverChunk}
@@ -71,19 +114,32 @@ class PlaceETH extends React.Component {
           hoveringChunk={this.state.hoveringChunk}
           toolMode={this.state.toolMode}
           drawOptions={this.state.drawOptions}
+          chunks={this.props.chunks}
+          badRef={c => this.canvasRef = c}
         />
         <Toolbar
           toolMode={this.state.toolMode}
           selectedChunk={this.state.selectedChunk}
           changeListCounts={this.state.changeListCounts}
+          onCommitChanges={this.handleCommitChanges}
+          onRevertChanges={this.handleRevertChanges}
         />
         <ToolmodeSelector
           onSelectToolmode={this.handleSetToolmode}
         />
         <Drawtools open={this.state.toolMode === 'draw'} onSelectColor={this.handleSelectColor} />
-      </div>
+      </Dropzone>
     )
   }
 }
 
-export default PlaceETH
+export default WithContract(['ChunkManager', 'Chunk'], {
+  mapContractInstancesToProps: async (contractName, instance, props) => {
+
+    if (contractName === 'ChunkManager') {
+      return {
+        chunks: await resolveChunksAndPixels(instance, props.contracts)
+      }
+    }
+  }
+})(PlaceETH)

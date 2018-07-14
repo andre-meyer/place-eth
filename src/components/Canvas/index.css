@@ -13,16 +13,10 @@
   height: auto;
 }
 
-.drawCanvas {
-  composes: disablePixelSmoothing;
-  width: 100%;
-  height: auto;
-  visibility: hidden;
-  z-index: -1;
-}
-
 .canvasWrapper {
   padding-left: 200px;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .canvas.move {

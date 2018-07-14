@@ -1,10 +1,14 @@
 :global html {
+  height: 100%;
+  overflow: hidden;
   margin: 0;
   padding: 0;
   font-family: 'Roboto', Helvetica, Arial, sans-serif;
 }
 
 :global body {
+  height: 100%;
+  overflow: hidden;
   margin: 0;
   padding: 0;
   font-family: 'Roboto', Helvetica, Arial, sans-serif;
@@ -16,4 +20,8 @@
 
 :global * {
   box-sizing: border-box;
+}
+
+:global .ReactModal__Content {
+  z-index: 100;
 }
