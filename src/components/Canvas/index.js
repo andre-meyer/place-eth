@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import classnames from 'classnames/bind'
 import normalizeWheel from 'normalize-wheel'
 
-import { clamp } from './utils/math'
+import { clamp } from 'utils'
 import { eventToCanvasPos } from './utils/mouse'
 import { disablePixelSmoothing } from './utils/canvas'
 import { doesColorMatchAtIndex } from './utils/image'
@@ -256,7 +256,7 @@ class Canvas extends React.Component {
     this.ctx.save()
     this.ctx.translate(offsetX, offsetY)
     this.ctx.scale(this.zoom, this.zoom)
-
+    
     for(let chunkX = chunkDrawStartX - 1; chunkX < chunkDrawStartX + chunkCountWidth + 1; chunkX++) {
       for(let chunkY = chunkDrawStartY - 1; chunkY < chunkDrawStartY + chunkCountHeight + 1; chunkY++) {
         const chunkKey = `${chunkX},${chunkY}`

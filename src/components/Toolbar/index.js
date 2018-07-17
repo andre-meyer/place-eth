@@ -25,6 +25,7 @@ const ToolbarDrawing = ({
   onRevertChanges,
 }) => (
   <React.Fragment>
+    <p>Estimated Gas Usage:</p>
     <div className={cx('changeList')}>
       <span className={cx('count')}>{chunkCreations}x Creation of Image Chunks</span>
         {chunkCreations > 0 && <span className={cx('gas')}>+ {chunkCreations * GAS_ESTIMATE_CHUNK_CREATE}</span>}
@@ -58,7 +59,6 @@ const Toolbar = (props) => {
     <div className={cx('toolbar')}>
       <div className={cx('inner')}>
         <h1 className={cx('title')}>PlaceETH</h1>
-        <p>Estimated Gas Usage:</p>
         <ToolbarComponent {...props} />
       </div>
     </div>

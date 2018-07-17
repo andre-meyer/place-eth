@@ -25,3 +25,45 @@
 :global .ReactModal__Content {
   z-index: 100;
 }
+
+:global .closeButton {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  text-align: left;
+  cursor: pointer;
+  top: 0px;
+  right: 0px;
+}
+
+:global .closeButton::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 4px);
+  height: 4px;
+  transition: background-color .4s ease-in;
+  background-color: black;
+  transform-origin: 50% 50%;
+  transform: rotate(45deg);
+}
+
+:global .closeButton::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 4px);
+  height: 4px;
+  transition: background-color .4s ease-in;
+  background-color: black;
+  transform-origin: 50% 50%;
+  transform: rotate(-45deg);  
+}
+
+:global .closeButton:hover::after, 
+:global .closeButton:hover::before {
+  background-color: #7575dc;
+}
+:global .closeButton:focus {
+  outline: none;
+}

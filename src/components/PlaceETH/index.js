@@ -46,6 +46,7 @@ class PlaceETH extends React.Component {
     this.handleRevertChanges = this.handleRevertChanges.bind(this)
 
     this.handleDropFile = this.handleDropFile.bind(this)
+    this.handleCloseModal = this.handleCloseModal.bind(this)
   }
 
   handleDropFile(acceptedFiles) {
@@ -54,6 +55,10 @@ class PlaceETH extends React.Component {
     this.setState({
       droppedImage: file,
     })
+  }
+
+  handleCloseModal() {
+    this.setState({ droppedImage: undefined })
   }
 
   handleSelectChunk(chunk) {
@@ -105,7 +110,7 @@ class PlaceETH extends React.Component {
           isOpen={!!this.state.droppedImage}
           contentLabel="Preparing your Image"
         >
-         <ImageProcess file={this.state.droppedImage} /> 
+         <ImageProcess file={this.state.droppedImage} onRequestClose={this.handleCloseModal} /> 
         </Modal>
         <Canvas
           onSelectChunk={this.handleSelectChunk}
