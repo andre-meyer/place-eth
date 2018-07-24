@@ -10,6 +10,7 @@ const ToolmodeSelector = ({ onSelectToolmode }) => {
     <div className={cx('toolmodeSelector')}>
       <a href="#" onClick={() => onSelectToolmode('move')}>Move</a>
       <a href="#" onClick={() => onSelectToolmode('draw')}>Draw</a>
+      <a href="#" onClick={() => onSelectToolmode('cost')}>Cost</a>
     </div>
   )
 }

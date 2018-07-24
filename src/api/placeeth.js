@@ -65,6 +65,7 @@ export const resolveChunksAndPixels = async (instance, contracts) => {
       const chunkKey = `${x},${y}`
       const image = await getPixelsForChunk(chunk)
       const creator = await chunk.creator()
+      const changes = (await chunk.getPixelChanges()).map(bn => bn.toNumber())
 
       const canvas = document.createElement('canvas')
       canvas.width = 128
@@ -72,7 +73,7 @@ export const resolveChunksAndPixels = async (instance, contracts) => {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(image, 0, 0, 0, 0, 128, 128)
     
-      chunks[chunkKey] = { image, canvas, chunk, x, y, creator }
+      chunks[chunkKey] = { image, canvas, chunk, x, y, creator, changes }
     })
   )
 

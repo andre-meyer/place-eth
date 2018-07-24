@@ -48,11 +48,26 @@ const ToolbarDrawing = ({
   </React.Fragment>
 )
 
+const ToolbarPricemap = ({
+  hoveringChunk,
+  mouseBoundary,
+}) => {
+  const changeIndex = mouseBoundary.x + 16 * mouseBoundary.y
+  const changes = hoveringChunk ? hoveringChunk.changes[changeIndex] : 0
+  return (
+    <React.Fragment>
+      <p>{mouseBoundary.x} {mouseBoundary.y}: {changes} times changes</p>
+    </React.Fragment>
+  )
+}
+
 const Toolbar = (props) => {
   let ToolbarComponent = ToolbarInfo
 
   if (props.toolMode === 'draw') {
     ToolbarComponent = ToolbarDrawing
+  } else if (props.toolMode === 'cost') {
+    ToolbarComponent = ToolbarPricemap
   }
 
   return (

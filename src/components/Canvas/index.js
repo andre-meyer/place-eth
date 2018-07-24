@@ -32,9 +32,11 @@ class Canvas extends React.Component {
     this.canvasOffset = { x: 0, y: 0 }
     this.mousePixel = { x: 0, y: 0 }
     this.mouseChunk = { x: 0, y: 0 }
+    this.mouseBoundary = { x: 0, y: 0 }
     this.zoom = 1
 
     this.prevMousePixel = { x: 0, y: 0 }
+    this.prevMouseBoundary = { x: 0, y: 0 }
 
     this.drawSpace = {}
     this.touchedChunks = []
@@ -110,15 +112,8 @@ class Canvas extends React.Component {
     
     if (this.mouseChunk.x !== chunkX || this.mouseChunk.y !== chunkY) {
       this.mouseChunk = { x: chunkX, y: chunkY }
-      let foundChunk = undefined
-      Object.keys(this.props.chunks).forEach((chunkKey) => {
-        const chunk = this.props.chunks[chunkKey]
-        if (chunk.x === chunkX && chunk.y === chunkY) {
-          foundChunk = chunk
-          return false
-        }
-      })
-      //console.log(foundChunk)
+      const chunkKey = `${chunkX},${chunkY}`
+      let foundChunk = this.props.chunks[chunkKey]
       this.mouseChunk = { x: chunkX, y: chunkY, ...(foundChunk || {}) }
 
       this.props.onHoverChunk(foundChunk)
@@ -134,6 +129,22 @@ class Canvas extends React.Component {
     }
 
     this.mousePixel = mousePixel
+
+    if (this.props.toolMode === 'cost') {
+      this.mouseBoundary = {
+        x: Math.floor(mousePixel.x / 8) % 16,
+        y: Math.floor(mousePixel.y / 8) % 16,
+      }
+
+      if (this.mouseBoundary.x !== this.prevMouseBoundary.x || this.mouseBoundary.y !== this.prevMouseBoundary.y) {
+        this.props.onHoverBoundary(this.mouseBoundary.x, this.mouseBoundary.y)
+      }
+
+      this.prevMouseBoundary = {
+        x: this.mouseBoundary.x,
+        y: this.mouseBoundary.y,
+      }
+    }
 
     // determine dragging offset
     if (this.isDragging && this.mouseStartDragPos) {
@@ -235,6 +246,34 @@ class Canvas extends React.Component {
     this.props.onUpdateCounts(0, 0, 0)
   }
 
+  renderHeatmapForChunk(chunkX, chunkY) {
+    const chunkKey = `${chunkX},${chunkY}`
+    const { changes } = this.props.chunks[chunkKey] || {}
+
+    if (!changes) {
+      this.ctx.fillStyle = `rgba(120, 120, 120, 0.3)`
+      this.ctx.fillRect((chunkX * 128 - 64), (chunkY * 128 - 64), 128, 128)
+    } else {
+      for(let x = 0; x < 16; x++) {
+        for(let y = 0; y < 16; y++) {
+          const boundaryIndex = x + 16 * y
+
+          const max = Math.pow(2, 8)
+          const changesAtBoundary = clamp(changes[boundaryIndex], 0, max)//changes[boundaryIndex]
+
+          const factor = (Math.sqrt((max ** 2) - ((changesAtBoundary - max) ** 2)) / max) * 255
+          //const factor = changesAtBoundary / (Math.pow(2, 16)) * 255
+          const redAmount = clamp(factor, 0, 255)
+          const greenAmount = 255 - clamp(factor, 0, 255)
+  
+          this.ctx.fillStyle = `rgba(${redAmount}, ${greenAmount}, 0, 0.3)`
+          this.ctx.fillRect((chunkX * 128 - 64) + x * 8, (chunkY * 128 - 64) + y * 8, 8, 8)
+        }
+      }  
+    }
+
+  }
+
   renderOnCanvas() {
     if (!this.initializedCanvas) this.initializeCanvas()
 
@@ -260,6 +299,7 @@ class Canvas extends React.Component {
     for(let chunkX = chunkDrawStartX - 1; chunkX < chunkDrawStartX + chunkCountWidth + 1; chunkX++) {
       for(let chunkY = chunkDrawStartY - 1; chunkY < chunkDrawStartY + chunkCountHeight + 1; chunkY++) {
         const chunkKey = `${chunkX},${chunkY}`
+        const chunk = this.props.chunks[chunkKey]
 
         const drewChunk = this.drawSpace[chunkKey]
         if (drewChunk) {
@@ -273,13 +313,13 @@ class Canvas extends React.Component {
           ctx.putImageData(drewChunk.image, 0, 0, 0, 0, 128, 128)
     
           this.ctx.drawImage(canvas, chunkX * 128 - 64, chunkY * 128 - 64)
-        } else {
-          // otherwise, simply display the one we loaded
-          const chunk = this.props.chunks[chunkKey]
-
-          if (chunk) {
+        } else if (chunk) {
+          // if a chunk exists here, simply display it
             this.ctx.drawImage(chunk.canvas, chunkX * 128 - 64, chunkY * 128 - 64)
-          }
+        }
+
+        if (this.props.toolMode === 'cost') {
+          this.renderHeatmapForChunk(chunkX, chunkY)
         }
       }
     }

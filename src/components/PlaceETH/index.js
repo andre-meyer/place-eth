@@ -23,6 +23,7 @@ class PlaceETH extends React.Component {
     this.state = {
       selectedChunk: undefined,
       hoveringChunk: undefined,
+      mouseBoundary: { x: 0, y: 0 },
       toolMode: 'move',
       drawOptions: {
         colorIndex: 0,
@@ -37,6 +38,7 @@ class PlaceETH extends React.Component {
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
     this.handleHoverChunk = this.handleHoverChunk.bind(this)
+    this.handleHoverBoundary = this.handleHoverBoundary.bind(this)
     this.handleSetToolmode = this.handleSetToolmode.bind(this)
 
     this.handleSelectColor = this.handleSelectColor.bind(this)
@@ -67,6 +69,10 @@ class PlaceETH extends React.Component {
 
   handleHoverChunk(chunk) {
     this.setState({ hoveringChunk: chunk })
+  }
+
+  handleHoverBoundary(x, y) {
+    this.setState({ mouseBoundary: { x, y }})
   }
 
   handleSetToolmode(toolMode) {
@@ -115,6 +121,7 @@ class PlaceETH extends React.Component {
         <Canvas
           onSelectChunk={this.handleSelectChunk}
           onHoverChunk={this.handleHoverChunk}
+          onHoverBoundary={this.handleHoverBoundary}
           onUpdateCounts={this.handleUpdateCounts}
           hoveringChunk={this.state.hoveringChunk}
           toolMode={this.state.toolMode}
@@ -125,6 +132,8 @@ class PlaceETH extends React.Component {
         <Toolbar
           toolMode={this.state.toolMode}
           selectedChunk={this.state.selectedChunk}
+          hoveringChunk={this.state.hoveringChunk}
+          mouseBoundary={this.state.mouseBoundary}
           changeListCounts={this.state.changeListCounts}
           onCommitChanges={this.handleCommitChanges}
           onRevertChanges={this.handleRevertChanges}
