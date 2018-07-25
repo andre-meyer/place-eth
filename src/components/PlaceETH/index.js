@@ -41,6 +41,7 @@ class PlaceETH extends React.Component {
       placingImage: undefined,
       commitStatus: undefined,
       commitProgress: 0,
+      commitErrors: 0,
     }
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
@@ -133,6 +134,7 @@ class PlaceETH extends React.Component {
     await this.setState({ commitStatus: 'running', commitProgress: 0 })
 
     let gasSum = 0
+    let commitErrors = 0
     while(changes.length > 0) {
       let totalGas = 0
       let boundariesX = []
@@ -154,13 +156,14 @@ class PlaceETH extends React.Component {
         }
   
         totalGas += gasCost
-      } while (totalGas < 3e6 && changes.length > 0)
+      } while (totalGas < 6.5e6 && changes.length > 0)
       console.log(`batched ${boundariesX.length} changes with ${totalGas} gas`)
       gasSum += totalGas
 
       try {
         await this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff })
       } catch (e) {
+        await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal), commitErrors: ++commitErrors })
         console.error(e)
       }
 
@@ -217,6 +220,7 @@ class PlaceETH extends React.Component {
           onPlace={this.handlePlaceOnCanvas}
           commitStatus={this.state.commitStatus}
           commitProgress={this.state.commitProgress}
+          commitErrors={this.state.commitErrors}
         />
         <ToolmodeSelector
           onSelectToolmode={this.handleSetToolmode}

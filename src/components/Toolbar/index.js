@@ -25,6 +25,7 @@ const ToolbarDrawing = ({
   onRevertChanges,
   commitProgress,
   commitStatus,
+  commitErrors,
 }) => (
   <React.Fragment>
     <p>Estimated Gas Usage:</p>
@@ -47,6 +48,7 @@ const ToolbarDrawing = ({
       <div className={cx('commitstatus')}>
         Running Transactions... {(commitProgress * 100).toFixed(2)}%
         <meter value={commitProgress} min={0} max={1} />
+        {commitErrors > 0 && <strong>{commitErrors} errors occured during transactions...</strong>}
       </div>
     )}
     <div>
