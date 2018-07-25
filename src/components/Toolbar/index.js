@@ -13,7 +13,7 @@ const GAS_ESTIMATE_PLACE_PIXEL = 45387
 const ToolbarInfo = () => (
   <React.Fragment>
     <p>Welcome to PlaceETH, your cutting edge advertisment space and overpriced low-resolution 16-color image storage.</p>
-    <p>Please connect with Metamask to interact with this webpage on either <External href="https://kovan-testnet.github.io/website/">Kovan</External> or Mainnet, if you're feeling adventurous.</p>
+    <p>Please connect with Metamask to interact with this webpage on either <External href="https://rinkeby.io/">Rinkeby</External> or <del>Mainnet</del> (not yet), if you're feeling adventurous.</p>
 
     {/*<p>Created by <Author href="https://twitter.com/andremeyer93">@andremeyer93</Author></p>*/}
   </React.Fragment>
