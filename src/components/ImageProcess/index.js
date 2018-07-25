@@ -14,7 +14,7 @@ class ImageProcess extends React.Component {
 
     this.state = {
       targetSize: 128,
-      ditherStrength: 0.5,
+      ditherStrength: 0,
     }
 
     // start by removing preview from react-dropzone to prevent memory leak

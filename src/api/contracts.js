@@ -1,15 +1,15 @@
 import TC from 'truffle-contract'
 import EthJS from 'ethjs'
 
-const provider = new EthJS.HttpProvider('http://127.0.0.1:8545')
+let provider = new EthJS.HttpProvider('http://127.0.0.1:8545')
 const eth = new EthJS(provider)
 
 if (window && window.web3 && window.web3.currentProvider) {
   console.log('Using Metamask')
+  provider = window.web3.currentProvider
   eth.setProvider(window.web3.currentProvider)
 } else {
   console.log('Using Ganache-CLI')
-  eth.setProvider(provider)
 }
 
 // returns TC wrapped and Provided contract

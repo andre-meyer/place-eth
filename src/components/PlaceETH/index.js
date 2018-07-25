@@ -136,7 +136,7 @@ class PlaceETH extends React.Component {
       boundaryValues.push(change.boundaryValue)
 
       if (boundariesX.length > 3) {
-        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff }))
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff, gasPrice: 0 }))
         boundariesX = []
         boundariesY = []
         boundaryValues = []
@@ -144,7 +144,7 @@ class PlaceETH extends React.Component {
     })
 
     if (boundariesX.length > 0) {
-      txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff }))
+      txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff, gasPrice: 0 }))
     }
 
     const tx = await Promise.all(txQueue)
