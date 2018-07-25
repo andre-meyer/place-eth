@@ -9,7 +9,8 @@
     "debug": "./node_modules/.bin/truffle debug",
     "migrate": "./node_modules/.bin/truffle migrate --reset --network development",
     "test": "./node_modules/.bin/truffle test --network development",
-    "ganache": "./node_modules/.bin/ganache-cli -d --hostname 127.0.0.1 -p 8545 -i 123456789"
+    "ganache": "./node_modules/.bin/ganache-cli -d --hostname 127.0.0.1 -p 8545 -i 123456789",
+    "migrate-test": "./node_modules/.bin/truffle migrate --reset --network rinkeby"
   },
   "keywords": [],
   "author": "",
@@ -47,6 +48,7 @@
     "prop-types": "^15.6.2",
     "react-hot-loader": "^4.3.3",
     "style-loader": "^0.21.0",
+    "truffle-hdwallet-provider": "0.0.5",
     "webpack": "^4.14.0",
     "webpack-cli": "^3.0.8",
     "webpack-dev-server": "^3.1.4"
