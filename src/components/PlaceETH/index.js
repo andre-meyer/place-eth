@@ -135,7 +135,7 @@ class PlaceETH extends React.Component {
       boundariesY.push(change.y)
       boundaryValues.push(change.boundaryValue)
 
-      if (boundariesX.length > 3) {
+      if (boundariesX.length > 100) {
         txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff, gasPrice: 0 }))
         boundariesX = []
         boundariesY = []
