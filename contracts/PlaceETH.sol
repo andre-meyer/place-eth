@@ -19,7 +19,7 @@ contract PlaceETH {
 
   function createChunk(int256 x, int256 y) public returns (Chunk) {
     bytes32 positionHash = keccak256(abi.encodePacked(x, y));
-    ChunkMapping storage existing = chunkPositionMapping[positionHash];
+    ChunkMapping memory existing = chunkPositionMapping[positionHash];
 
     require(existing.created == false, "this chunk was already created");
     
@@ -38,9 +38,6 @@ contract PlaceETH {
   }
 
   function commit(int256[] boundariesX, int256[] boundariesY, uint256[] boundaryValues) public {
-    //bool boundaryLengthMatch = boundariesX.length == boundariesY.length;
-    //bool boundaryValueLengthMatch = boundariesY.length == boundaryValues.length;
-    //require(boundaryLengthMatch && boundaryValueLengthMatch, "all arrays passed must be same length");
     for(uint256 changeIndex = 0; changeIndex < boundariesX.length; changeIndex++) {
       int256 boundaryPositionX = boundariesX[changeIndex];
       int256 boundaryPositionY = boundariesY[changeIndex];
@@ -50,9 +47,17 @@ contract PlaceETH {
       int256 chunkX = (boundaryPositionX * 8) / 128;
       int256 chunkY = (boundaryPositionY * 8) / 128;
       
+      /// @dev stupid problem with integer division
+      if (boundaryPositionX < 0) {
+        chunkX -= 1;
+      }
+      if (boundaryPositionY < 0) {
+        chunkY -= 1;
+      }
+
       /// @dev mapping of positions/chunks is done as hashed positions
       bytes32 positionHash = keccak256(abi.encodePacked(chunkX, chunkY));
-      ChunkMapping storage existing = chunkPositionMapping[positionHash];
+      ChunkMapping memory existing = chunkPositionMapping[positionHash];
 
       Chunk targetChunk = existing.chunk;
       if (!existing.created) {

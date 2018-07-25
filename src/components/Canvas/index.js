@@ -232,7 +232,7 @@ class Canvas extends React.Component {
           this.touchedChunks.push(chunkKey)
         }
 
-        const pixelBoundaryKey = `${chunkKey},${Math.floor(mousePixel.x / 8) % 16},${Math.floor(mousePixel.y / 8) % 16}`
+        const pixelBoundaryKey = `${chunkKey},${mod(Math.floor(mousePixel.x / 8), 16)},${mod(Math.floor(mousePixel.y / 8), 16)}`
         this.touchedPixelBoundaries.push(pixelBoundaryKey)
       }
     }
@@ -287,14 +287,16 @@ class Canvas extends React.Component {
     this.renderOnCanvas()
   }
 
-  paintPlacingImage() {
-    console.log(this.props.placingImage)
+  paintPlacingImage(placingImage) {
+    const { width, height } = placingImage
+    console.log(width, height)
+    console.log(this.placePosition.x, this.placePosition.y)
 
-    for(let imgX = 0; imgX < this.props.placingImage.width; imgX++) {
-      for(let imgY = 0; imgY < this.props.placingImage.height; imgY++) {
+    for(let imgX = 0; imgX < width; imgX++) {
+      for(let imgY = 0; imgY < height; imgY++) {
         const pixelPosOnCanvas = {
           x: this.placePosition.x + imgX,
-          y: this.placePosition.y + imgY,
+          y: this.placePosition.y + imgY
         }
 
         const chunkX = Math.floor(pixelPosOnCanvas.x / 128)
@@ -318,16 +320,16 @@ class Canvas extends React.Component {
           y: mod(pixelPosOnCanvas.y, 128),
         }
 
-        const imagePixelIndex = imgX + this.props.placingImage.width * imgY
+        const imagePixelIndex = imgX + placingImage.width * imgY
         const imagePixelIndexBit = imagePixelIndex * 4
 
         const positionInChunkIndex = positionInChunk.x + 128 * positionInChunk.y
         const positionInChunkIndexBit = positionInChunkIndex * 4
 
         const [r, g, b] = [
-          this.props.placingImage.data[imagePixelIndexBit],
-          this.props.placingImage.data[imagePixelIndexBit + 1],
-          this.props.placingImage.data[imagePixelIndexBit + 2],
+          placingImage.data[imagePixelIndexBit],
+          placingImage.data[imagePixelIndexBit + 1],
+          placingImage.data[imagePixelIndexBit + 2],
         ]
 
         const noChange = doesColorMatchAtIndex([r, g, b], this.drawSpace[chunkKey].original, positionInChunkIndexBit)
@@ -346,7 +348,7 @@ class Canvas extends React.Component {
             this.touchedChunks.push(chunkKey)
           }
 
-          const pixelBoundaryKey = `${chunkKey},${Math.floor(positionInChunk.x / 8) % 16},${Math.floor(positionInChunk.y / 8) % 16}`
+          const pixelBoundaryKey = `${chunkKey},${mod(Math.floor(positionInChunk.x / 8), 16)},${mod(Math.floor(positionInChunk.y / 8), 16)}`
           this.touchedPixelBoundaries.push(pixelBoundaryKey)
         }
         
@@ -464,7 +466,7 @@ class Canvas extends React.Component {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(this.props.placingImage, 0, 0)
 
-      this.ctx.drawImage(canvas, this.placePosition.x + -canvas.width / 2, this.placePosition.y + -canvas.height / 2)
+      this.ctx.drawImage(canvas, this.placePosition.x + -this.props.placingImage.width / 2, this.placePosition.y + -this.props.placingImage.height / 2)
     }
     
     this.ctx.restore()

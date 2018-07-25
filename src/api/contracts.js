@@ -6,8 +6,8 @@ const eth = new EthJS(provider)
 
 if (window && window.web3 && window.web3.currentProvider) {
   console.log('Using Metamask')
-  provider = window.web3.currentProvider
-  eth.setProvider(window.web3.currentProvider)
+//  provider = window.web3.currentProvider
+//  eth.setProvider(window.web3.currentProvider)
 } else {
   console.log('Using Ganache-CLI')
 }

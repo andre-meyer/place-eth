@@ -23,6 +23,8 @@ const ToolbarDrawing = ({
   changeListCounts: { chunkCreations, chunkUpdates, boundaryChanges },
   onCommitChanges,
   onRevertChanges,
+  commitProgress,
+  commitStatus,
 }) => (
   <React.Fragment>
     <p>Estimated Gas Usage:</p>
@@ -41,6 +43,12 @@ const ToolbarDrawing = ({
         (boundaryChanges * GAS_ESTIMATE_PLACE_PIXEL)
       }</p>
     </div>
+    {commitStatus === 'running' && (
+      <div className={cx('commitstatus')}>
+        Running Transactions... {(commitProgress * 100).toFixed(2)}%
+        <meter value={commitProgress} min={0} max={1} />
+      </div>
+    )}
     <div>
       {boundaryChanges > 0 && <button type="button" className={cx('reset')} onClick={onRevertChanges}>Cancel</button>}
       {boundaryChanges > 0 && <button type="button" className={cx('commit')} onClick={onCommitChanges}>Commit</button>}

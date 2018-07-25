@@ -39,6 +39,8 @@ class PlaceETH extends React.Component {
       },
       droppedImage: undefined,
       placingImage: undefined,
+      commitStatus: undefined,
+      commitProgress: 0,
     }
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
@@ -75,7 +77,8 @@ class PlaceETH extends React.Component {
   }
 
   handlePlaceOnCanvas() {
-    this.canvasRef.paintPlacingImage()
+    this.canvasRef.paintPlacingImage(this.state.placingImage)
+
     this.setState({
       toolMode: 'draw',
       placingImage: undefined,
@@ -125,36 +128,47 @@ class PlaceETH extends React.Component {
 
   async handleCommitChanges() {
     const changes = collectTransactionChanges(this.canvasRef.drawSpace, this.canvasRef.state.boundariesChanged)
-    console.log(changes.length)
-    const txQueue = []
+    const changesTotal = changes.length
 
-    let boundariesX = []
-    let boundariesY = []
-    let boundaryValues = []
+    await this.setState({ commitStatus: 'running', commitProgress: 0 })
 
-    let consecutiveGas = 0
+    let gasSum = 0
+    while(changes.length > 0) {
+      let totalGas = 0
+      let boundariesX = []
+      let boundariesY = []
+      let boundaryValues = []
+      
+      do {
+        const change = changes.pop()
+  
+        boundariesX.push(change.x)
+        boundariesY.push(change.y)
+        boundaryValues.push(change.boundaryValue)
+  
+        let gasCost = 0
+        try {
+          gasCost = await this.props.deployed.PlaceETH.commit.estimateGas(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff })
+        } catch (e) {
+          console.error(e)
+        }
+  
+        totalGas += gasCost
+      } while (totalGas < 3e6 && changes.length > 0)
+      console.log(`batched ${boundariesX.length} changes with ${totalGas} gas`)
+      gasSum += totalGas
 
-    changes.forEach((change) => {
-      boundariesX.push(change.x)
-      boundariesY.push(change.y)
-      boundaryValues.push(change.boundaryValue)
-
-      if (boundariesX.length > 100) {
-        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff }))
-        boundariesX = []
-        boundariesY = []
-        boundaryValues = []
+      try {
+        await this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff })
+      } catch (e) {
+        console.error(e)
       }
-    })
 
-    if (boundariesX.length > 0) {
-      txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff }))
+      await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal) })
     }
+    console.log({ gasSum })
 
-    const tx = await Promise.all(txQueue)
-
-    consecutiveGas = tx.reduce((acc, txEntry) => acc + txEntry.receipt.gasUsed, 0)
-    console.log({ consecutiveGas })
+    await this.setState({ commitStatus: 'finished', commitProgress: 1 - (changes.length / changesTotal) })
 
     this.canvasRef.clearDrawSpace()
   }
@@ -201,6 +215,8 @@ class PlaceETH extends React.Component {
           onCommitChanges={this.handleCommitChanges}
           onRevertChanges={this.handleRevertChanges}
           onPlace={this.handlePlaceOnCanvas}
+          commitStatus={this.state.commitStatus}
+          commitProgress={this.state.commitProgress}
         />
         <ToolmodeSelector
           onSelectToolmode={this.handleSetToolmode}

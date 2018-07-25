@@ -88,22 +88,67 @@ contract('PlaceETH', (accounts) => {
 
     const testPixelHex = generateTestPixelBoundary()
     // chunk -1, -1
-    const { receipt: { gasUsed } } = await placeETH.commit([-2], [-2], [testPixelHex])
+    const { receipt: { gasUsed } } = await placeETH.commit([-20], [-20], [testPixelHex])
     logGasUsage(gasUsed, 'PlaceETH', 'commit')
     const { args: { chunk: createdChunkAddress, boundaryIndex, boundaryValue } } = await waitForEvent(placeETH, 'ChunkUpdated')
 
     const chunk = await Chunk.at(createdChunkAddress)
     const position = await chunk.position()
     const [ x, y ] = position.map(bn => bn.toNumber())
-    assert.equal(x, -1)
-    assert.equal(y, -1)
-    assert.equal(boundaryIndex.toNumber(), 238) // -2, -2 in 1d is index 238
-    assert.equal(boundaryValue.toString(16), testPixelHex.toString(16))
+    assert.strictEqual(x, -2)
+    assert.strictEqual(y, -2)
+    assert.strictEqual(boundaryIndex.toNumber(), 204) // -20, -20 mod 16 = -12, -12 in 1d is index 204
+    assert.strictEqual(boundaryValue.toString(16), testPixelHex.toString(16))
 
     const timeBetweenChanges = await placeETH.timeBetweenPlacements()
     //console.log(parseTimeBetweenPlacements(timeBetweenChanges))
 
+
     await increaseTime(1000 * 60 * 50)
+  })
+
+  it('is able to commit a lot of changes, in one chunk', async () => {
+    const placeETH = await PlaceETH.deployed()
+
+    const changes = Object.keys(Array(12).fill()).reduce((changeList, boundaryIndex) => {
+      const x = boundaryIndex % 16
+      const y = Math.floor(boundaryIndex / 16)
+      changeList.boundaryX.push(x)
+      changeList.boundaryY.push(y)
+      changeList.boundaryValues.push(generateTestPixelBoundary())
+
+      return changeList
+    }, { boundaryX: [], boundaryY: [], boundaryValues: [] })
+    console.log(changes.boundaryX.length)
+    await placeETH.commit(changes.boundaryX, changes.boundaryY, changes.boundaryValues, { gas: 0xfffff })
+  })
+
+  it.only('is able to commit a lot of changes, in 4 chunks', async () => {
+    const placeETH = await PlaceETH.deployed()
+
+    const txQueue = []
+
+    let amountOfChanges = 0
+    let currentGasSum = 0
+    while(amountOfChanges < 80) {
+      const changes = Object.keys(Array(amountOfChanges++).fill()).reduce((changeList, boundaryIndex) => {
+        const x = (((boundaryIndex % 16) + 16) % 16)
+        const y = Math.floor(boundaryIndex / 16)
+        changeList.boundaryX.push(x)
+        changeList.boundaryY.push(y)
+        changeList.boundaryValues.push(generateTestPixelBoundary())
+  
+        return changeList
+      }, { boundaryX: [], boundaryY: [], boundaryValues: [] })
+
+      const estimate = await placeETH.commit.estimateGas(changes.boundaryX, changes.boundaryY, changes.boundaryValues, { gas: 0xfffff })
+
+      currentGasSum += estimate
+
+      if (currentGasSum > 1e6) {
+        txQueue.push(await placeETH.commit(changes.boundaryX, changes.boundaryY, changes.boundaryValues, { gas: 0xfffff }))
+      }
+    }
   })
 
   it('is able to get the pixelcost', async () => {
@@ -122,7 +167,7 @@ contract('PlaceETH', (accounts) => {
     const { receipt: { gasUsed }, logs } = await placeETH.commit([-3, 2], [3, 2], [firstPixelSample, secondPixelSample])
     logGasUsage(gasUsed, 'PlaceETH', 'commit')
 
-    const [ _, firstChunkUpdate, secondChunkUpdate ] = logs
+    const [ firstChunkUpdate, secondChunkUpdate ] = logs.filter((log) => log.event === 'ChunkUpdated')
     
     assert.isDefined(firstChunkUpdate)
     const firstUpdatedChunk = await Chunk.at(firstChunkUpdate.args.chunk)
@@ -161,18 +206,6 @@ contract('Chunk', (accounts) => {
 
     const chunk = await Chunk.at(chunkAddress)
     assert.isDefined(chunk)
-  })
-
-  it('is able to set a pixel', async () => {
-    const chunk = await Chunk.at(chunkAddress)
-    const desiredX = 100
-    const desiredY = 100
-    const desiredC = 11
-
-    const { receipt: { gasUsed } } = await chunk.setPixel(desiredX, desiredY, desiredC, { from: accounts[0] })
-    logGasUsage(gasUsed, 'chunk', 'setPixel')
-    const readPixelColor = (await chunk.getPixel.call(desiredX, desiredY)).toNumber()
-    assert.strictEqual(readPixelColor, desiredC)
   })
 
   it('is unable to set a pixel out of bounds', async () => {
