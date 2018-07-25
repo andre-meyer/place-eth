@@ -61,6 +61,16 @@ const ToolbarPricemap = ({
   )
 }
 
+const ToolbarPlace = ({
+  onPlace
+}) => {
+  return (
+    <React.Fragment>
+      <button type="button" onClick={onPlace}>Place at current position</button>
+    </React.Fragment>
+  )
+}
+
 const Toolbar = (props) => {
   let ToolbarComponent = ToolbarInfo
 
@@ -68,6 +78,8 @@ const Toolbar = (props) => {
     ToolbarComponent = ToolbarDrawing
   } else if (props.toolMode === 'cost') {
     ToolbarComponent = ToolbarPricemap
+  } else if (props.toolMode === 'place') {
+    ToolbarComponent = ToolbarPlace
   }
 
   return (

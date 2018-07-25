@@ -1,5 +1,23 @@
 import { palette } from './colorPalette16.json'
 
+export const findColorNaive = (r, g, b) => {
+  const normR = r >> 4
+  const normG = g >> 4
+  const normB = b >> 4
+
+  const colors = [normR, normG, normB]
+
+  const colorString = `#${colors.map((n) => n.toString(16)).join('').toUpperCase()}`
+
+  const colorIndex = palette.indexOf(colorString)
+
+  if (colorIndex < 0) {
+    return findColorInPalette(r, g, b)
+  }
+
+  return colorIndex
+}
+
 export const getColorForIndex = (i) => {
   if (!palette.hasOwnProperty(i)) {
     return '#fff'

@@ -7,6 +7,8 @@ export const getPixelsForChunk = async (chunk) => {
   //const bytes = await Promise.all(range(256).map(async (byteIndex) => await chunk.pixels.call(byteIndex)))
   const bytes = await chunk.getPixelData.call()
 
+  const [ x, y ] = (await chunk.position()).map((bn) => bn.toNumber())
+  
   const chunkPixelBoundaries = []
   bytes.forEach((bigNum) => {
     const longByteString = leftPad(bigNum.toString(2), 255, '0').split('').reverse().join('')
@@ -15,9 +17,10 @@ export const getPixelsForChunk = async (chunk) => {
       return parseInt(bytePart, 2)
     }))
   })
+
+  //if (y < 0) debugger;
   
   const image = new ImageData(128, 128)
-  let imagePointer = 0
 
   chunkPixelBoundaries.forEach((boundary, boundaryIndex) => {
     const boundaryPos = {
@@ -45,7 +48,7 @@ export const getPixelsForChunk = async (chunk) => {
       const [r, g, b] = getColorComponentsForIndex(pixel)
       image.data[posIndex] = r
       image.data[posIndex+1] = g
-      image.data[posIndex+2] = g
+      image.data[posIndex+2] = b
       image.data[posIndex+3] = 255
     })
   })
@@ -63,6 +66,7 @@ export const resolveChunksAndPixels = async (instance, contracts) => {
       const chunk = await contracts.Chunk.at(chunkAddress)
       const [ x, y ] = (await chunk.position()).map(bigNum => bigNum.toNumber())
       const chunkKey = `${x},${y}`
+      
       const image = await getPixelsForChunk(chunk)
       const creator = await chunk.creator()
       const changes = (await chunk.getPixelChanges()).map(bn => bn.toNumber())

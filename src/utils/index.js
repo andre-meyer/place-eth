@@ -9,3 +9,5 @@ export const clamp = (value, min, max) => {
   }
   return value
 }
+
+export const mod = (n, m) => ((n % m) + m) % m

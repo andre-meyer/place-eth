@@ -4,6 +4,14 @@ import EthJS from 'ethjs'
 const provider = new EthJS.HttpProvider('http://127.0.0.1:8545')
 const eth = new EthJS(provider)
 
+if (window && window.web3 && window.web3.currentProvider) {
+  console.log('Using Metamask')
+  eth.setProvider(window.web3.currentProvider)
+} else {
+  console.log('Using Ganache-CLI')
+  eth.setProvider(provider)
+}
+
 // returns TC wrapped and Provided contract
 export const getContract = async (name) => {
   const artifact = require(`../../build/contracts/${name}.json`)

@@ -106,6 +106,13 @@ contract('PlaceETH', (accounts) => {
     await increaseTime(1000 * 60 * 50)
   })
 
+  it('is able to get the pixelcost', async () => {
+    const placeETH = await PlaceETH.deployed()
+    const averagedGasPrice = (await placeETH.getPixelCost.call()).toNumber()
+    // 5 because previous were 5. averaged = 5
+    assert.equal(averagedGasPrice, 5);
+  })
+
   it('is able to commit multiple changes to existing chunks', async () => {
     const placeETH = await PlaceETH.deployed()
 
@@ -137,15 +144,9 @@ contract('PlaceETH', (accounts) => {
     assert.equal(secondX, 0)
     assert.equal(secondY, 0)
 
-    const timeBetweenChanges = await placeETH.timeBetweenPlacements()
-    console.log(parseTimeBetweenPlacements(timeBetweenChanges))
-    await increaseTime(1000 * 60 * 5)
-    console.log((await placeETH.getPixelCost.call()).toNumber())
-  })
-
-  it('is able to get the pixelcost', async () => {
-    const placeETH = await PlaceETH.deployed()
-    //console.log((await placeETH.getPixelCost.call()).toNumber())
+    const averagedGasPrice = (await placeETH.getPixelCost.call()).toNumber()
+    // 20 because previous were 5, 5, 50. averaged = 20
+    assert.equal(averagedGasPrice, 20);
   })
 })
 

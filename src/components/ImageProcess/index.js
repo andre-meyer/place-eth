@@ -27,6 +27,7 @@ class ImageProcess extends React.Component {
     this.handleChangeTargetSize = this.handleChangeTargetSize.bind(this)
     this.handleChangeDitherStrength = this.handleChangeDitherStrength.bind(this)
     this.handleApply = this.handleApply.bind(this)
+    this.handlePlace = this.handlePlace.bind(this)
   }
   
   prepareImage(img) {
@@ -130,6 +131,11 @@ class ImageProcess extends React.Component {
     this.renderOnCanvas()
   }
 
+  handlePlace() {
+    this.props.onComplete(this.ctx.getImageData(0, 0, this.image.width, this.image.height))
+    this.props.onRequestClose()
+  }
+
   render() {
     return (
       <div className={cx('imageProcessingModal')}>
@@ -149,6 +155,7 @@ class ImageProcess extends React.Component {
               <input type="range" min={0} max={1} step={0.05} value={this.state.ditherStrength} onChange={this.handleChangeDitherStrength} /> <span>{Math.round(this.state.ditherStrength * 100)}%</span>
             </div>
             <button type="button" onClick={this.handleApply}>Apply</button>
+            <button type="button" onClick={this.handlePlace}>Place</button>
           </div>
         </div>
       </div>

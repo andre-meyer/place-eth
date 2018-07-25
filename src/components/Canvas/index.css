@@ -17,11 +17,11 @@
   overflow: hidden;
 }
 
-.canvas.move {
+.canvas.move, .canvas.cost {
   cursor: grab;
   cursor: -webkit-grab;
 }
-.canvas.move.isDragging {
+.canvas.isDragging {
   cursor: grabbing;
   cursor: -webkit-grabbing;
 }

@@ -11,6 +11,10 @@ import ImageProcess from 'components/ImageProcess'
 import WithContract from 'WithContract'
 
 import {
+  collectTransactionChanges,
+} from './utils'
+
+import {
   resolveChunksAndPixels,
 } from 'api/placeeth'
 
@@ -34,6 +38,7 @@ class PlaceETH extends React.Component {
         boundaryChanges: 0,
       },
       droppedImage: undefined,
+      placingImage: undefined,
     }
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
@@ -49,6 +54,9 @@ class PlaceETH extends React.Component {
 
     this.handleDropFile = this.handleDropFile.bind(this)
     this.handleCloseModal = this.handleCloseModal.bind(this)
+
+    this.handlePlaceImage = this.handlePlaceImage.bind(this)
+    this.handlePlaceOnCanvas = this.handlePlaceOnCanvas.bind(this)
   }
 
   handleDropFile(acceptedFiles) {
@@ -57,6 +65,17 @@ class PlaceETH extends React.Component {
     this.setState({
       droppedImage: file,
     })
+  }
+
+  handlePlaceImage(placingImage) {
+    this.setState({
+      placingImage,
+      toolMode: 'place',
+    })
+  }
+
+  handlePlaceOnCanvas() {
+    this.canvasRef.paintPlacingImage()
   }
 
   handleCloseModal() {
@@ -76,7 +95,10 @@ class PlaceETH extends React.Component {
   }
 
   handleSetToolmode(toolMode) {
-    this.setState({ toolMode })
+    this.setState({
+      toolMode,
+      placingImage: undefined // resets placing mode
+    })
   }
 
   handleSelectColor(color) {
@@ -97,7 +119,39 @@ class PlaceETH extends React.Component {
     })
   }
 
-  handleCommitChanges() {
+  async handleCommitChanges() {
+    const changes = collectTransactionChanges(this.canvasRef.drawSpace, this.canvasRef.state.boundariesChanged)
+    console.log(changes.length)
+    const txQueue = []
+
+    let boundariesX = []
+    let boundariesY = []
+    let boundaryValues = []
+
+    let consecutiveGas = 0
+
+    changes.forEach((change) => {
+      boundariesX.push(change.x)
+      boundariesY.push(change.y)
+      boundaryValues.push(change.boundaryValue)
+
+      if (boundariesX.length > 3) {
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff }))
+        boundariesX = []
+        boundariesY = []
+        boundaryValues = []
+      }
+    })
+
+    if (boundariesX.length > 0) {
+      txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 0xfffff }))
+    }
+
+    const tx = await Promise.all(txQueue)
+
+    consecutiveGas = tx.reduce((acc, txEntry) => acc + txEntry.receipt.gasUsed, 0)
+    console.log({ consecutiveGas })
+
     this.canvasRef.clearDrawSpace()
   }
 
@@ -116,7 +170,11 @@ class PlaceETH extends React.Component {
           isOpen={!!this.state.droppedImage}
           contentLabel="Preparing your Image"
         >
-         <ImageProcess file={this.state.droppedImage} onRequestClose={this.handleCloseModal} /> 
+         <ImageProcess
+          file={this.state.droppedImage}
+          onRequestClose={this.handleCloseModal}
+          onComplete={this.handlePlaceImage}
+        /> 
         </Modal>
         <Canvas
           onSelectChunk={this.handleSelectChunk}
@@ -127,6 +185,7 @@ class PlaceETH extends React.Component {
           toolMode={this.state.toolMode}
           drawOptions={this.state.drawOptions}
           chunks={this.props.chunks}
+          placingImage={this.state.placingImage}
           badRef={c => this.canvasRef = c}
         />
         <Toolbar
@@ -137,6 +196,7 @@ class PlaceETH extends React.Component {
           changeListCounts={this.state.changeListCounts}
           onCommitChanges={this.handleCommitChanges}
           onRevertChanges={this.handleRevertChanges}
+          onPlace={this.handlePlaceOnCanvas}
         />
         <ToolmodeSelector
           onSelectToolmode={this.handleSetToolmode}
@@ -147,10 +207,10 @@ class PlaceETH extends React.Component {
   }
 }
 
-export default WithContract(['ChunkManager', 'Chunk'], {
+export default WithContract(['PlaceETH', 'Chunk'], {
   mapContractInstancesToProps: async (contractName, instance, props) => {
 
-    if (contractName === 'ChunkManager') {
+    if (contractName === 'PlaceETH') {
       return {
         chunks: await resolveChunksAndPixels(instance, props.contracts)
       }

@@ -49,16 +49,7 @@ contract PlaceETH {
       /// @dev find the chunk at the position of the change. changes are within 8^2 pixel blocks, chunks are 128^2 pixels
       int256 chunkX = (boundaryPositionX * 8) / 128;
       int256 chunkY = (boundaryPositionY * 8) / 128;
-
-      if (boundaryPositionX < 0) {
-        chunkX -= 1;
-      }
-
-      if (boundaryPositionY < 0) {
-        chunkY -= 1;
-      }
-
-
+      
       /// @dev mapping of positions/chunks is done as hashed positions
       bytes32 positionHash = keccak256(abi.encodePacked(chunkX, chunkY));
       ChunkMapping storage existing = chunkPositionMapping[positionHash];
@@ -100,24 +91,29 @@ contract PlaceETH {
     uint8 placementIndex = 0;
     uint16 betweenLastPlacement;
 
+    uint256 mask = 0xffff;
     do {
-      betweenLastPlacement = uint16(timeBetweenPlacements & (uint256(2**16) << placementIndex));
-      minutesBetweenPlacements[placementIndex] = betweenLastPlacement;
-      placementIndex++;
+      uint256 bitOffset = placementIndex * 16;
+      uint256 diffAtCurrentIndex = (timeBetweenPlacements & (mask << bitOffset)) >> bitOffset;
+
+      betweenLastPlacement = uint16(diffAtCurrentIndex);
+      minutesBetweenPlacements[placementIndex++] = betweenLastPlacement;
     } while (betweenLastPlacement > 0);
 
+    //return placementIndex;
+    //return betweenLastPlacement;
     if (placementIndex == 0) {
       /// @dev No previous placements
       return 0;
     }
 
     uint256 average = 0;
-    for(uint256 intervalIndex = 0; intervalIndex < placementIndex; intervalIndex++) {
+    for(uint256 intervalIndex = 0; intervalIndex < (placementIndex - 1); intervalIndex++) {
       uint256 minuteDifference = minutesBetweenPlacements[intervalIndex];
       average += minuteDifference;
     }
 
-    return average / placementIndex;
+    return average / (placementIndex - 1);
   }
 
   function getChunkCount() public view returns (uint256) {
