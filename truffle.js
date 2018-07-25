@@ -10,7 +10,8 @@ module.exports = {
     },
     rinkeby: {
       provider: function() {
-        return new HDWalletProvider(secret.mnemonic, "https://rinkeby.infura.io/");
+        const mnemonic = Buffer.from(secret.mnemonic, 'base64').toString('ascii')
+        return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/");
       },
       network_id: '4',
     },
