@@ -77,7 +77,8 @@ class PlaceETH extends React.Component {
   handlePlaceOnCanvas() {
     this.canvasRef.paintPlacingImage()
     this.setState({
-      toolMode: 'draw'
+      toolMode: 'draw',
+      placingImage: undefined,
     })
   }
 
