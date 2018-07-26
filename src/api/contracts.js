@@ -10,7 +10,7 @@ if (window && window.web3 && window.web3.currentProvider) {
 } else {
   if (process.env.NODE_ENV === 'development') {
     console.log('Using Ganache-CLI')
-    provider = new EthJS.HttpProvider('http://localhost:8543')
+    provider = new EthJS.HttpProvider('http://localhost:8545')
   }
 }
 

@@ -208,9 +208,11 @@ const WithContract = (contractNameOrNames, options = {onError: console.error}) =
           this.autoReload = setInterval(this.refresh, options.autoReload)
         }
 
-        this.setState({
+        await this.setState({
           hasLoaded: true
         })
+        options.onReady && options.onReady()
+
       } catch (e) {
         console.error(e)
         this.setState({
@@ -230,11 +232,11 @@ const WithContract = (contractNameOrNames, options = {onError: console.error}) =
 
     render() {
       if (this.state.hasErrored) {
-        return <ChildComponent state={'error'} />
+        return <span>Error</span> // <ChildComponent state={'error'} />
       }
 
       if (!this.state.hasLoaded) {
-        return <ChildComponent state={'loading'} />
+        return <span>Loading...</span> // <ChildComponent state={'loading'} />
       }
 
       const props = {

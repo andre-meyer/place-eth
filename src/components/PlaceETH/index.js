@@ -15,7 +15,11 @@ import {
 } from './utils'
 
 import {
-  resolveChunksAndPixels,
+  range,
+} from 'utils'
+
+import {
+  getPixelsForChunk,
 } from 'api/placeeth'
 
 Modal.setAppElement('#root')
@@ -25,6 +29,7 @@ class PlaceETH extends React.Component {
     super(props)
 
     this.state = {
+      chunksLoaded: [],
       selectedChunk: undefined,
       hoveringChunk: undefined,
       mouseBoundary: { x: 0, y: 0 },
@@ -44,6 +49,8 @@ class PlaceETH extends React.Component {
       commitErrors: 0,
     }
 
+    this.chunks = {}
+
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
     this.handleHoverChunk = this.handleHoverChunk.bind(this)
     this.handleHoverBoundary = this.handleHoverBoundary.bind(this)
@@ -60,6 +67,35 @@ class PlaceETH extends React.Component {
 
     this.handlePlaceImage = this.handlePlaceImage.bind(this)
     this.handlePlaceOnCanvas = this.handlePlaceOnCanvas.bind(this)
+  }
+
+  componentDidMount() {
+    this.startChunkLoader()
+  }
+
+  async startChunkLoader() {
+    const { deployed: { PlaceETH }, contracts: { Chunk } } = this.props
+    const chunkCount = (await PlaceETH.getChunkCount()).toNumber()
+
+    range(chunkCount).forEach(async (chunkIndex) => {
+      const chunkAddress = await PlaceETH.chunks(chunkIndex)
+      const chunk = await Chunk.at(chunkAddress)
+      const [ x, y ] = (await chunk.position()).map(bigNum => bigNum.toNumber())
+      const chunkKey = `${x},${y}`
+      
+      const image = await getPixelsForChunk(chunk)
+      const creator = await chunk.creator()
+      const changes = (await chunk.getPixelChanges()).map(bn => bn.toNumber())
+
+      const canvas = document.createElement('canvas')
+      canvas.width = 128
+      canvas.height = 128
+      const ctx = canvas.getContext('2d')
+      ctx.putImageData(image, 0, 0, 0, 0, 128, 128)
+    
+      this.chunks[chunkKey] = { image, canvas, chunk, x, y, creator, changes }
+      await this.setState({ chunksLoaded: [...this.state.chunksLoaded, chunkKey ]})
+    })
   }
 
   handleDropFile(acceptedFiles) {
@@ -127,6 +163,16 @@ class PlaceETH extends React.Component {
     })
   }
 
+  handleRevertChanges() {
+    this.canvasRef.clearDrawSpace()
+
+    this.setState({
+      commitStatus: undefined,
+      commitProgress: 0,
+      placingImage: undefined,
+    })
+  }
+
   async handleCommitChanges() {
     const changes = collectTransactionChanges(this.canvasRef.drawSpace, this.canvasRef.state.boundariesChanged)
     const changesTotal = changes.length
@@ -181,10 +227,6 @@ class PlaceETH extends React.Component {
     this.canvasRef.clearDrawSpace()
   }
 
-  handleRevertChanges() {
-    this.canvasRef.clearDrawSpace()
-  }
-
   render() {
     return (
       <Dropzone
@@ -210,7 +252,7 @@ class PlaceETH extends React.Component {
           hoveringChunk={this.state.hoveringChunk}
           toolMode={this.state.toolMode}
           drawOptions={this.state.drawOptions}
-          chunks={this.props.chunks}
+          chunks={this.chunks}
           placingImage={this.state.placingImage}
           badRef={c => this.canvasRef = c}
         />
@@ -236,13 +278,4 @@ class PlaceETH extends React.Component {
   }
 }
 
-export default WithContract(['PlaceETH', 'Chunk'], {
-  mapContractInstancesToProps: async (contractName, instance, props) => {
-
-    if (contractName === 'PlaceETH') {
-      return {
-        chunks: await resolveChunksAndPixels(instance, props.contracts)
-      }
-    }
-  }
-})(PlaceETH)
+export default WithContract(['PlaceETH', 'Chunk'])(PlaceETH)
