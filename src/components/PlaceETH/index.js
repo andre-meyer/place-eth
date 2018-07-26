@@ -133,6 +133,8 @@ class PlaceETH extends React.Component {
 
     await this.setState({ commitStatus: 'running', commitProgress: 0 })
 
+    const txQueue = []
+
     let gasSum = 0
     let commitErrors = 0
     while(changes.length > 0) {
@@ -161,7 +163,8 @@ class PlaceETH extends React.Component {
       gasSum += totalGas
 
       try {
-        await this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: 7500000 })
+        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { from: this.props.account })
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account }))
       } catch (e) {
         await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal), commitErrors: ++commitErrors })
         console.error(e)
@@ -170,6 +173,8 @@ class PlaceETH extends React.Component {
       await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal) })
     }
     console.log({ gasSum })
+
+    await Promise.all(txQueue)
 
     await this.setState({ commitStatus: 'finished', commitProgress: 1 - (changes.length / changesTotal) })
 
