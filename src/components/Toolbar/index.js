@@ -66,7 +66,7 @@ const ToolbarPricemap = ({
   const changes = hoveringChunk ? hoveringChunk.changes[changeIndex] : 0
   return (
     <React.Fragment>
-      <p>{mouseBoundary.x} {mouseBoundary.y}: {changes} times changes</p>
+      <p>{hoveringChunk && hoveringChunk.x} {hoveringChunk && hoveringChunk.y}@{mouseBoundary.x} {mouseBoundary.y}: {changes} times changes</p>
     </React.Fragment>
   )
 }

@@ -24,7 +24,7 @@ contract PlaceETH {
     require(existing.created == false, "this chunk was already created");
     
     Chunk newChunk = new Chunk();
-    newChunk.spawn(x, y);
+    newChunk.spawn(x, y, msg.sender);
     emit ChunkCreated(newChunk);
     
     ChunkMapping memory newMapping;
@@ -48,12 +48,14 @@ contract PlaceETH {
       int256 chunkY = (boundaryPositionY * 8) / 128;
       
       /// @dev stupid problem with integer division
-      if (boundaryPositionX < 0) {
+      /*
+      if (boundaryPositionX < 0 && boundaryPositionX > -8) {
         chunkX -= 1;
       }
-      if (boundaryPositionY < 0) {
+      if (boundaryPositionY < 0 && boundaryPositionY > -8) {
         chunkY -= 1;
       }
+      */
 
       /// @dev mapping of positions/chunks is done as hashed positions
       bytes32 positionHash = keccak256(abi.encodePacked(chunkX, chunkY));

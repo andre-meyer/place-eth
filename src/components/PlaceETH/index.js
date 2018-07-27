@@ -19,8 +19,12 @@ import {
 } from 'utils'
 
 import {
-  getPixelsForChunk,
+  composeChunkData,
+  watchChunkUpdates,
+  watchChunkCreations,
+  renderPixelBoundary,
 } from 'api/placeeth'
+
 
 Modal.setAppElement('#root')
 
@@ -49,6 +53,7 @@ class PlaceETH extends React.Component {
       commitErrors: 0,
     }
 
+    this.watchers = []
     this.chunks = {}
 
     this.handleSelectChunk = this.handleSelectChunk.bind(this)
@@ -67,10 +72,14 @@ class PlaceETH extends React.Component {
 
     this.handlePlaceImage = this.handlePlaceImage.bind(this)
     this.handlePlaceOnCanvas = this.handlePlaceOnCanvas.bind(this)
+
+    this.handleChunkUpdate = this.handleChunkUpdate.bind(this)
+    this.handleChunkCreation = this.handleChunkCreation.bind(this)
   }
 
   componentDidMount() {
     this.startChunkLoader()
+    this.startEventWatcher()
   }
 
   async startChunkLoader() {
@@ -79,23 +88,50 @@ class PlaceETH extends React.Component {
 
     range(chunkCount).forEach(async (chunkIndex) => {
       const chunkAddress = await PlaceETH.chunks(chunkIndex)
-      const chunk = await Chunk.at(chunkAddress)
-      const [ x, y ] = (await chunk.position()).map(bigNum => bigNum.toNumber())
-      const chunkKey = `${x},${y}`
-      
-      const image = await getPixelsForChunk(chunk)
-      const creator = await chunk.creator()
-      const changes = (await chunk.getPixelChanges()).map(bn => bn.toNumber())
+      const {
+        chunkKey,
+        ...chunk
+      } = await composeChunkData(chunkAddress, Chunk)
+
+      this.chunks[chunkKey] = chunk
+
+      this.canvasRef.renderOnCanvas()
+    })
+  }
+
+  async startEventWatcher() {
+    const { deployed: { PlaceETH }, contracts: { Chunk } } = this.props
+
+    this.watchers.push(watchChunkUpdates(PlaceETH, this.handleChunkUpdate, Chunk))
+    this.watchers.push(watchChunkCreations(PlaceETH, this.handleChunkCreation, Chunk))
+  }
+
+  async handleChunkUpdate(chunkKey, chunk, boundaryIndex, boundaryValue) {
+    this.handleChunkCreation(chunkKey, chunk)
+
+    if (this.chunks[chunkKey]) {
+      // copy as canvas
+      renderPixelBoundary(this.chunks[chunkKey].image, boundaryIndex.toNumber(), boundaryValue)
 
       const canvas = document.createElement('canvas')
       canvas.width = 128
       canvas.height = 128
       const ctx = canvas.getContext('2d')
-      ctx.putImageData(image, 0, 0, 0, 0, 128, 128)
+      ctx.putImageData(this.chunks[chunkKey].image, 0, 0, 0, 0, 128, 128)
     
-      this.chunks[chunkKey] = { image, canvas, chunk, x, y, creator, changes }
-      await this.setState({ chunksLoaded: [...this.state.chunksLoaded, chunkKey ]})
-    })
+      this.chunks[chunkKey].canvas = canvas
+      this.canvasRef.renderOnCanvas()
+
+      this.forceUpdate()
+    }
+  }
+
+  async handleChunkCreation(chunkKey, chunk) {
+    if (!this.chunks[chunkKey]) {
+      this.chunks[chunkKey] = chunk
+
+      this.setState({ chunksLoaded: [...this.state.chunksLoaded, chunkKey ]})
+    }
   }
 
   handleDropFile(acceptedFiles) {
@@ -184,7 +220,7 @@ class PlaceETH extends React.Component {
     let gasSum = 0
     let commitErrors = 0
     while(changes.length > 0) {
-      let totalGas = 0
+      let commitGas = 0
       let boundariesX = []
       let boundariesY = []
       let boundaryValues = []
@@ -203,14 +239,14 @@ class PlaceETH extends React.Component {
           console.error(e)
         }
   
-        totalGas += gasCost
-      } while (totalGas < 6.5e6 && changes.length > 0)
-      console.log(`batched ${boundariesX.length} changes with ${totalGas} gas`)
-      gasSum += totalGas
+        commitGas += gasCost
+      } while (commitGas < 6e6 && changes.length > 0)
+      console.log(`batched ${boundariesX.length} changes with ${commitGas} gas`)
+      gasSum += commitGas
 
       try {
-        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { from: this.props.account })
-        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account }))
+        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: commitGas })
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { from: this.props.account, gas: commitGas }))
       } catch (e) {
         await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal), commitErrors: ++commitErrors })
         console.error(e)

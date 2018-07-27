@@ -19,11 +19,11 @@ contract Chunk {
   /// @dev Array of changes that occured in each 8*8 pixel boundary. Used to determine pricing for writing in boundary
   uint8[256] public changes;
 
-  function spawn(int256 x, int256 y) public {
+  function spawn(int256 x, int256 y, address _creator) public {
     position.x = x;
     position.y = y;
 
-    creator = msg.sender;
+    creator = _creator;
     created = true;
   }
 

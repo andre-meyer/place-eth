@@ -30,6 +30,7 @@ class Canvas extends React.Component {
     }
 
     this.canvasOffset = { x: 0, y: 0 }
+    this.mousePosition = { x: 0, y: 0 }
     this.mousePixel = { x: 0, y: 0 }
     this.mouseChunk = { x: 0, y: 0 }
     this.mouseBoundary = { x: 0, y: 0 }
@@ -289,8 +290,6 @@ class Canvas extends React.Component {
 
   paintPlacingImage(placingImage) {
     const { width, height } = placingImage
-    console.log(width, height)
-    console.log(this.placePosition.x, this.placePosition.y)
 
     for(let imgX = 0; imgX < width; imgX++) {
       for(let imgY = 0; imgY < height; imgY++) {
