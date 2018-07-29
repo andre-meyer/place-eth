@@ -1,12 +1,17 @@
 import React from 'react'
 import Dropzone from 'react-dropzone'
 import Modal from 'react-modal'
+import { HotKeys } from 'react-hotkeys'
 
 import Canvas from 'components/Canvas'
 import Toolbar from 'components/Toolbar'
 import ToolmodeSelector from 'components/ToolmodeSelector'
 import Drawtools from 'components/Drawtools'
 import ImageProcess from 'components/ImageProcess'
+import AutoMode from 'components/AutoMode'
+
+import ErrorComponent from './Error'
+import LoadingComponent from './Loading'
 
 import WithContract from 'WithContract'
 
@@ -16,6 +21,7 @@ import {
 
 import {
   range,
+  mod,
 } from 'utils'
 
 import {
@@ -118,8 +124,16 @@ class PlaceETH extends React.Component {
       canvas.height = 128
       const ctx = canvas.getContext('2d')
       ctx.putImageData(this.chunks[chunkKey].image, 0, 0, 0, 0, 128, 128)
-    
+
       this.chunks[chunkKey].canvas = canvas
+      this.chunks[chunkKey].changes[boundaryIndex.toNumber()]++
+
+      if (this.state.toolMode === 'auto') {
+        const boundaryX = mod(boundaryIndex, 16)
+        const boundaryY = Math.floor(boundaryIndex / 16)
+        this.canvasRef.panTo({ x: this.chunks[chunkKey].x, y: this.chunks[chunkKey].y }, { x: boundaryX, y: boundaryY })
+      }
+      
       this.canvasRef.renderOnCanvas()
 
       this.forceUpdate()
@@ -210,7 +224,7 @@ class PlaceETH extends React.Component {
   }
 
   async handleCommitChanges() {
-    const changes = collectTransactionChanges(this.canvasRef.drawSpace, this.canvasRef.state.boundariesChanged)
+    const changes = collectTransactionChanges(this.canvasRef.drawSpace, this.canvasRef.touchedPixelBoundaries)
     const changesTotal = changes.length
 
     await this.setState({ commitStatus: 'running', commitProgress: 0 })
@@ -265,53 +279,64 @@ class PlaceETH extends React.Component {
 
   render() {
     return (
-      <Dropzone
-        onDrop={this.handleDropFile}
-        disableClick
-        style={{position: "relative"}}
-      >
-        <Modal
-          isOpen={!!this.state.droppedImage}
-          contentLabel="Preparing your Image"
+      <HotKeys keyMap={{ 'setAutoMode': 'A' }} handlers={{ setAutoMode: () => this.handleSetToolmode(this.state.toolMode === 'auto' ? 'move' : 'auto') }}>
+        <Dropzone
+          onDrop={this.handleDropFile}
+          disableClick
+          style={{position: "relative"}}
         >
-         <ImageProcess
-          file={this.state.droppedImage}
-          onRequestClose={this.handleCloseModal}
-          onComplete={this.handlePlaceImage}
-        /> 
-        </Modal>
-        <Canvas
-          onSelectChunk={this.handleSelectChunk}
-          onHoverChunk={this.handleHoverChunk}
-          onHoverBoundary={this.handleHoverBoundary}
-          onUpdateCounts={this.handleUpdateCounts}
-          hoveringChunk={this.state.hoveringChunk}
-          toolMode={this.state.toolMode}
-          drawOptions={this.state.drawOptions}
-          chunks={this.chunks}
-          placingImage={this.state.placingImage}
-          badRef={c => this.canvasRef = c}
-        />
-        <Toolbar
-          toolMode={this.state.toolMode}
-          selectedChunk={this.state.selectedChunk}
-          hoveringChunk={this.state.hoveringChunk}
-          mouseBoundary={this.state.mouseBoundary}
-          changeListCounts={this.state.changeListCounts}
-          onCommitChanges={this.handleCommitChanges}
-          onRevertChanges={this.handleRevertChanges}
-          onPlace={this.handlePlaceOnCanvas}
-          commitStatus={this.state.commitStatus}
-          commitProgress={this.state.commitProgress}
-          commitErrors={this.state.commitErrors}
-        />
-        <ToolmodeSelector
-          onSelectToolmode={this.handleSetToolmode}
-        />
-        <Drawtools open={this.state.toolMode === 'draw'} onSelectColor={this.handleSelectColor} />
-      </Dropzone>
+          <Modal
+            isOpen={!!this.state.droppedImage}
+            contentLabel="Preparing your Image"
+          >
+          <ImageProcess
+            file={this.state.droppedImage}
+            onRequestClose={this.handleCloseModal}
+            onComplete={this.handlePlaceImage}
+          /> 
+          </Modal>
+          <Canvas
+            onSelectChunk={this.handleSelectChunk}
+            onHoverChunk={this.handleHoverChunk}
+            onHoverBoundary={this.handleHoverBoundary}
+            onUpdateCounts={this.handleUpdateCounts}
+            hoveringChunk={this.state.hoveringChunk}
+            toolMode={this.state.toolMode}
+            drawOptions={this.state.drawOptions}
+            chunks={this.chunks}
+            placingImage={this.state.placingImage}
+            badRef={c => this.canvasRef = c}
+          />
+          <Toolbar
+            toolMode={this.state.toolMode}
+            selectedChunk={this.state.selectedChunk}
+            hoveringChunk={this.state.hoveringChunk}
+            mouseBoundary={this.state.mouseBoundary}
+            changeListCounts={this.state.changeListCounts}
+            onCommitChanges={this.handleCommitChanges}
+            onRevertChanges={this.handleRevertChanges}
+            onPlace={this.handlePlaceOnCanvas}
+            commitStatus={this.state.commitStatus}
+            commitProgress={this.state.commitProgress}
+            commitErrors={this.state.commitErrors}
+          />
+          <ToolmodeSelector
+            toolMode={this.state.toolMode}
+            onSelectToolmode={this.handleSetToolmode}
+          />
+          <Drawtools open={this.state.toolMode === 'draw'} onSelectColor={this.handleSelectColor} />
+          {this.state.toolMode === 'auto' && (
+            <AutoMode
+
+            />
+          )}
+        </Dropzone>
+      </HotKeys>
     )
   }
 }
 
-export default WithContract(['PlaceETH', 'Chunk'])(PlaceETH)
+export default WithContract(['PlaceETH', 'Chunk'], {
+  ErrorComponent,
+  LoadingComponent,
+})(PlaceETH)

@@ -5,7 +5,7 @@ import normalizeWheel from 'normalize-wheel'
 
 import { clamp, mod } from 'utils'
 import { eventToCanvasPos } from './utils/mouse'
-import { disablePixelSmoothing } from './utils/canvas'
+import { disablePixelSmoothing, createEmptyChunk } from './utils/canvas'
 import { doesColorMatchAtIndex } from './utils/image'
 
 import { getColorForIndex, getColorComponentsForIndex} from 'utils/colors'
@@ -60,8 +60,17 @@ class Canvas extends React.Component {
 
     this.handleMouseDown = this.handleMouseDown.bind(this)
     this.handleMouseUp = this.handleMouseUp.bind(this)
-
+    
     this.paintPlacingImage = this.paintPlacingImage.bind(this)
+  }
+
+  panTo(chunkPos, boundaryPos) {
+    const newOffset = {
+      x: -(chunkPos.x * 128 + boundaryPos.x * 8) / this.zoom,
+      y: -(chunkPos.y * 128 + boundaryPos.y * 8) / this.zoom,
+    }
+
+    this.canvasOffset = newOffset
   }
 
   handleMouseDown(evt) {
@@ -127,17 +136,23 @@ class Canvas extends React.Component {
   }
 
   handleMouseMove(evt) {
-    if (!this.ctx || !this.props || !this.props.onSelectChunk) {
+    if (!this.initializedCanvas || !this.ctx || !this.props || !this.props.onSelectChunk) {
       return false
     }
 
     const mousePosition = eventToCanvasPos(evt, this.ctx)
     this.mousePosition = mousePosition
     
+    // determine mouse pixel (respecting zoom + offset)
+    const mousePixel = {
+      x: Math.round((mousePosition.x - this.canvasOffset.x - this.viewPort.width/2) / this.zoom) + 64,
+      y: Math.round((mousePosition.y - this.canvasOffset.y - this.viewPort.height/2) / this.zoom) + 64,
+    }
+
     // determine mouse position in chunks
     const chunkSize = 128 * this.zoom
-    const chunkX = Math.floor((mousePosition.x - this.canvasOffset.x + chunkSize / 2) / chunkSize)
-    const chunkY = Math.floor((mousePosition.y - this.canvasOffset.y + chunkSize / 2) / chunkSize)
+    const chunkX = Math.floor(mousePixel.x / chunkSize)
+    const chunkY = Math.floor(mousePixel.y / chunkSize)
     
     if (this.mouseChunk.x !== chunkX || this.mouseChunk.y !== chunkY) {
       this.mouseChunk = { x: chunkX, y: chunkY }
@@ -148,22 +163,14 @@ class Canvas extends React.Component {
       this.props.onHoverChunk(foundChunk)
     }
 
-    // determine mouse pixel (respecting zoom + offset)
-    const mousePixelX = Math.round((mousePosition.x - this.canvasOffset.x) / this.zoom) + 64
-    const mousePixelY = Math.round((mousePosition.y - this.canvasOffset.y) / this.zoom) + 64
-
-    const mousePixel = {
-      x: mousePixelX,
-      y: mousePixelY,
-    }
-
+    //console.log({mousePixelX, mousePixelY})
     this.mousePixel = mousePixel
 
     // determine cost to draw at mouse pixel
     if (this.props.toolMode === 'cost') {
       this.mouseBoundary = {
-        x: Math.floor(mousePixel.x / 8) % 16,
-        y: Math.floor(mousePixel.y / 8) % 16,
+        x: Math.floor(mousePixel.x / 8),
+        y: Math.floor(mousePixel.y / 8),
       }
 
       if (this.mouseBoundary.x !== this.prevMouseBoundary.x || this.mouseBoundary.y !== this.prevMouseBoundary.y) {
@@ -197,7 +204,13 @@ class Canvas extends React.Component {
       const isExistingChunk = !!this.mouseChunk.image
 
       if (!this.drawSpace[chunkKey]) {
-        const source = isExistingChunk ? this.mouseChunk.image.data : (new Uint8ClampedArray(128 * 128 * 4).fill(255))
+        let source
+        if (isExistingChunk) {
+          source = new Uint8ClampedArray(this.props.chunks[chunkKey].image.data)
+        } else {
+          source = createEmptyChunk()
+        }
+
         this.drawSpace[chunkKey] = {
           image: new ImageData(source, 128, 128),
           original: new ImageData(source, 128, 128),
@@ -281,8 +294,8 @@ class Canvas extends React.Component {
       this.zoom = zoom
     }
     
-    this.canvasOffset.x -= (this.canvasOffset.x - this.mousePosition.x) * (1 - this.zoom / prevZoom)
-    this.canvasOffset.y -= (this.canvasOffset.y - this.mousePosition.y) * (1 - this.zoom / prevZoom)
+    this.canvasOffset.x -= (this.canvasOffset.x + this.viewPort.width/2 - this.mousePosition.x) * (1 - this.zoom / prevZoom)
+    this.canvasOffset.y -= (this.canvasOffset.y + this.viewPort.height/2 - this.mousePosition.y) * (1 - this.zoom / prevZoom)
 
 
     this.renderOnCanvas()
@@ -306,7 +319,13 @@ class Canvas extends React.Component {
         const isExistingChunk = this.props.chunks[chunkKey] && this.props.chunks[chunkKey].image
 
         if (!this.drawSpace[chunkKey]) {
-          const source = isExistingChunk ? this.props.chunks[chunkKey].image.data : (new Uint8ClampedArray(128 * 128 * 4).fill(255))
+          let source
+          if (isExistingChunk) {
+            source = new Uint8ClampedArray(this.props.chunks[chunkKey].image.data)
+          } else {
+            source = createEmptyChunk()
+          }
+          
           this.drawSpace[chunkKey] = {
             image: new ImageData(source, 128, 128),
             original: new ImageData(source, 128, 128),
@@ -402,6 +421,8 @@ class Canvas extends React.Component {
   }
 
   renderOnCanvas() {
+    if(!this.ctx) return
+
     if (!this.initializedCanvas) this.initializeCanvas()
 
     this.ctx.fillStyle = 'white'
@@ -416,11 +437,12 @@ class Canvas extends React.Component {
     const chunkCountWidth = Math.ceil(this.canvasSize.width / (128 * this.zoom))
     const chunkCountHeight = Math.ceil(this.canvasSize.height / (128 * this.zoom))
     
-    const chunkDrawStartX = -Math.floor(offsetX / (128 * this.zoom))
-    const chunkDrawStartY = -Math.floor(offsetY / (128 * this.zoom))
+    const chunkDrawStartX = -Math.floor((offsetX + this.viewPort.width/2) / (128 * this.zoom))
+    const chunkDrawStartY = -Math.floor((offsetY + this.viewPort.height/2) / (128 * this.zoom))
 
     this.ctx.save()
     this.ctx.translate(offsetX, offsetY)
+    this.ctx.translate(this.viewPort.width / 2, this.viewPort.height / 2)
     this.ctx.scale(this.zoom, this.zoom)
 
     for(let chunkX = chunkDrawStartX - 1; chunkX < chunkDrawStartX + chunkCountWidth + 1; chunkX++) {
@@ -457,7 +479,7 @@ class Canvas extends React.Component {
 
       const width = this.canvasSize.width / this.zoom
       const height = this.canvasSize.height / this.zoom
-      this.ctx.fillRect(-this.canvasOffset.x / this.zoom, -this.canvasOffset.y / this.zoom, width, height)
+      this.ctx.fillRect(-(this.canvasOffset.x + this.viewPort.width/2) / this.zoom, -(this.canvasOffset.y + this.viewPort.height/2) / this.zoom, width, height)
 
       const canvas = document.createElement('canvas')
       canvas.width = this.props.placingImage.width
@@ -468,14 +490,14 @@ class Canvas extends React.Component {
       this.ctx.drawImage(canvas, this.placePosition.x + -this.props.placingImage.width / 2, this.placePosition.y + -this.props.placingImage.height / 2)
     }
     
-    this.ctx.restore()
+    //this.ctx.restore()
     
     // when drawing, render pixel at current mouse position
     if (this.props.toolMode === 'draw' && this.mouseChunk) {
-      this.ctx.save()
+      //this.ctx.save()
 
-      this.ctx.translate(offsetX, offsetY)
-      this.ctx.scale(this.zoom, this.zoom)
+      //this.ctx.translate(offsetX, offsetY)
+      //this.ctx.scale(this.zoom, this.zoom)
 
       this.ctx.fillStyle = getColorForIndex(this.props.drawOptions.colorIndex)
       //this.ctx.fillRect(Math.floor((this.state.mousePosition.x - offsetX) / this.state.zoom), Math.floor((this.state.mousePosition.y - offsetY) / this.state.zoom), 100, 100)
@@ -484,7 +506,7 @@ class Canvas extends React.Component {
       this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'
       this.ctx.strokeRect(this.mouseChunk.x * 128 - 64, this.mouseChunk.y * 128 - 64, 128, 128)
 
-      this.ctx.restore()
+      //this.ctx.restore()
     }
 
     this.ctx.restore()
@@ -506,25 +528,22 @@ class Canvas extends React.Component {
     this.initializedCanvas = true
 
     const canvasBoundingBox = this.ctx.canvas.getBoundingClientRect()
-    const viewPortBoundingBox = {
+    this.viewPort = {
       width: Math.min(canvasBoundingBox.width, window.innerWidth),
       height: Math.min(canvasBoundingBox.height, window.innerHeight),
     }
-    this.viewPort = { width: viewPortBoundingBox.width, height: viewPortBoundingBox.height }
     this.canvasBoundingBox = canvasBoundingBox
     this.canvasSize = { width: this.ctx.canvas.width, height: this.ctx.canvas.height }
-    this.canvasOffset = { x: this.viewPort.width, y: this.viewPort.height }
+    this.canvasOffset = { x: 0, y: 0 }
     disablePixelSmoothing(this.canvas)
   }
 
   render() {
-    if(this.ctx) this.renderOnCanvas()
-
     return (
       <div className={cx('canvasWrapper')}>
         <canvas
-          width={3000}
-          height={3000}
+          width={window.innerWidth}
+          height={window.innerHeight}
           ref={c => this.canvas = c}
           className={cx(
             'canvas',

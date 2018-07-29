@@ -1,0 +1,10 @@
+.automode {
+  position: absolute;
+
+  left: 20px;
+  bottom: 20px;
+  right: 20px;
+  height: 120px;
+
+  background: rgba(0, 0, 0, 0.4);
+}

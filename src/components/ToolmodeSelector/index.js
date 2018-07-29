@@ -5,7 +5,11 @@ import styles from './index.css'
 
 const cx = classnames.bind(styles)
 
-const ToolmodeSelector = ({ onSelectToolmode }) => {
+const ToolmodeSelector = ({ onSelectToolmode, toolMode }) => {
+  if (toolMode === 'auto') {
+    return null
+  }
+  
   return (
     <div className={cx('toolmodeSelector')}>
       <a href="#" onClick={() => onSelectToolmode('move')}>Move</a>

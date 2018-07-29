@@ -48,14 +48,13 @@ contract PlaceETH {
       int256 chunkY = (boundaryPositionY * 8) / 128;
       
       /// @dev stupid problem with integer division
-      /*
-      if (boundaryPositionX < 0 && boundaryPositionX > -8) {
+      if (boundaryPositionX < 0 && boundaryPositionX % 16 != 0) {
         chunkX -= 1;
       }
-      if (boundaryPositionY < 0 && boundaryPositionY > -8) {
+      if (boundaryPositionY < 0 && boundaryPositionY % 16 != 0) {
         chunkY -= 1;
       }
-      */
+      
 
       /// @dev mapping of positions/chunks is done as hashed positions
       bytes32 positionHash = keccak256(abi.encodePacked(chunkX, chunkY));

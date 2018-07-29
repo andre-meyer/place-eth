@@ -52,8 +52,8 @@ const ToolbarDrawing = ({
       </div>
     )}
     <div>
-      {boundaryChanges > 0 && <button type="button" className={cx('reset')} onClick={onRevertChanges}>Cancel</button>}
-      {boundaryChanges > 0 && <button type="button" className={cx('commit')} onClick={onCommitChanges}>Commit</button>}
+      {boundaryChanges > 0 && <button type="button" className={cx('reset')} disabled={commitStatus === 'running'} onClick={onRevertChanges}>Cancel</button>}
+      {boundaryChanges > 0 && <button type="button" className={cx('commit')} disabled={commitStatus === 'running'} onClick={onCommitChanges}>Commit</button>}
     </div>
   </React.Fragment>
 )
@@ -90,6 +90,8 @@ const Toolbar = (props) => {
     ToolbarComponent = ToolbarPricemap
   } else if (props.toolMode === 'place') {
     ToolbarComponent = ToolbarPlace
+  } else if (props.toolMode === 'auto') {
+    return null
   }
 
   return (

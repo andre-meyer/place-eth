@@ -11,7 +11,15 @@ import { getContract, setupContract, getAccounts } from 'api'
  * @param {array|string} contractNameOrNames 
  * @param {object} options 
  */
-const WithContract = (contractNameOrNames, options = {onError: console.error}) => (ChildComponent) => {
+const WithContract = (contractNameOrNames, _options = {}) => (ChildComponent) => {
+  const options = {
+    onError: _options.onError || console.error, // error handler
+    handleStatesInComponent: !!_options.handleStatesInComponent, // if state changes ("loading", "error") can be handled in ChildComponent, otherwise HOC handles it
+    ErrorComponent: _options.ErrorComponent || 'span',
+    LoadingComponent: _options.LoadingComponent || 'span',
+  }
+
+
   return class extends Component {
     constructor(props) {
       super(props)
@@ -136,8 +144,7 @@ const WithContract = (contractNameOrNames, options = {onError: console.error}) =
 
     async fetchContractsFromProps() {
       this.accounts = await getAccounts()
-      console.log(this.accounts)
-
+      
       // load contracts from contractNamesOrNames (array or string)
       if (typeof contractNameOrNames === 'object') {
         this.contracts = {}
@@ -145,7 +152,6 @@ const WithContract = (contractNameOrNames, options = {onError: console.error}) =
         const promises = contractNameOrNames.map(async (contractName) => await this.loadContract(contractName))
 
         await Promise.all(promises)
-        console.log({promises})
 
       } else {
         this.contracts = {}
@@ -232,11 +238,11 @@ const WithContract = (contractNameOrNames, options = {onError: console.error}) =
 
     render() {
       if (this.state.hasErrored) {
-        return <span>Error</span> // <ChildComponent state={'error'} />
+        return options.handleStatesInComponent ? <ChildComponent state={'error'} /> : <options.ErrorComponent>Error</options.ErrorComponent>
       }
 
       if (!this.state.hasLoaded) {
-        return <span>Loading...</span> // <ChildComponent state={'loading'} />
+        return options.handleStatesInComponent ? <ChildComponent state={'loading'} /> : <options.LoadingComponent>Loading</options.LoadingComponent>
       }
 
       const props = {
