@@ -57,6 +57,7 @@ class PlaceETH extends React.Component {
       commitStatus: undefined,
       commitProgress: 0,
       commitErrors: 0,
+      eventLog: []
     }
 
     this.watchers = []
@@ -112,7 +113,7 @@ class PlaceETH extends React.Component {
     this.watchers.push(watchChunkCreations(PlaceETH, this.handleChunkCreation, Chunk))
   }
 
-  async handleChunkUpdate(chunkKey, chunk, boundaryIndex, boundaryValue) {
+  async handleChunkUpdate(chunkKey, chunk, boundaryIndex, boundaryValue, event) {
     this.handleChunkCreation(chunkKey, chunk)
 
     if (this.chunks[chunkKey]) {
@@ -136,7 +137,10 @@ class PlaceETH extends React.Component {
       
       this.canvasRef.renderOnCanvas()
 
-      this.forceUpdate()
+
+      this.setState({
+        eventLog: [...this.state.eventLog.reverse().slice(0, 10).reverse(), event]
+      })
     }
   }
 
@@ -327,7 +331,7 @@ class PlaceETH extends React.Component {
           <Drawtools open={this.state.toolMode === 'draw'} onSelectColor={this.handleSelectColor} />
           {this.state.toolMode === 'auto' && (
             <AutoMode
-
+              lastEvent={this.state.eventLog[this.state.eventLog.length - 1]}
             />
           )}
         </Dropzone>

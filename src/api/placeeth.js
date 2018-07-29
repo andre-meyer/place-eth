@@ -108,7 +108,7 @@ export const watchChunkUpdates = (instance, onChunkUpdate, Chunk) => {
       ...chunk
     } = await composeChunkData(chunkAddress, Chunk)
     
-    onChunkUpdate(chunkKey, chunk, boundaryIndex, boundaryValue)
+    onChunkUpdate(chunkKey, chunk, boundaryIndex, boundaryValue, res)
   })
 
 }

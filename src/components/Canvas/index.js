@@ -286,19 +286,21 @@ class Canvas extends React.Component {
   }
 
   handleZoom(evt) {
-    const prevZoom = this.zoom
-    const normalized = normalizeWheel(evt)
-    const value = normalized.pixelY / 1000
-    const zoom = clamp(this.zoom + value, 0.2, 30)
-    if (this.zoom !== zoom) {
-      this.zoom = zoom
+    if (this.props.toolMode === 'move' || this.props.toolMode === 'cost') {
+      const prevZoom = this.zoom
+      const normalized = normalizeWheel(evt)
+      const value = normalized.pixelY / 1000
+      const zoom = clamp(this.zoom + value, 0.2, 30)
+      if (this.zoom !== zoom) {
+        this.zoom = zoom
+      }
+      
+      this.canvasOffset.x -= (this.canvasOffset.x + this.viewPort.width/2 - this.mousePosition.x) * (1 - this.zoom / prevZoom)
+      this.canvasOffset.y -= (this.canvasOffset.y + this.viewPort.height/2 - this.mousePosition.y) * (1 - this.zoom / prevZoom)
+  
+  
+      this.renderOnCanvas()
     }
-    
-    this.canvasOffset.x -= (this.canvasOffset.x + this.viewPort.width/2 - this.mousePosition.x) * (1 - this.zoom / prevZoom)
-    this.canvasOffset.y -= (this.canvasOffset.y + this.viewPort.height/2 - this.mousePosition.y) * (1 - this.zoom / prevZoom)
-
-
-    this.renderOnCanvas()
   }
 
   paintPlacingImage(placingImage) {

@@ -9,8 +9,8 @@ contract PlaceETH {
     bool created;
   }
 
-  event ChunkCreated(Chunk chunk);
-  event ChunkUpdated(Chunk chunk, uint256 boundaryIndex, uint256 boundaryValue, uint8 boundaryChanges);
+  event ChunkCreated(Chunk chunk, address creator, uint256 timestamp);
+  event ChunkUpdated(Chunk chunk, uint256 boundaryIndex, uint256 boundaryValue, uint8 boundaryChanges, address creator, uint256 timestamp);
 
   uint256 public timeBetweenPlacements;
   uint256 lastPlacement = block.timestamp;
@@ -25,7 +25,7 @@ contract PlaceETH {
     
     Chunk newChunk = new Chunk();
     newChunk.spawn(x, y, msg.sender);
-    emit ChunkCreated(newChunk);
+    emit ChunkCreated(newChunk, msg.sender, block.timestamp);
     
     ChunkMapping memory newMapping;
     newMapping.chunk = newChunk;
@@ -72,7 +72,7 @@ contract PlaceETH {
       uint256 boundaryIndex = (boundaryPosInChunkX + 16 * boundaryPosInChunkY);
 
       targetChunk.setPixelBoundary(boundaryIndex, boundaryValue);
-      emit ChunkUpdated(targetChunk, boundaryIndex, boundaryValue, targetChunk.changes(boundaryIndex));
+      emit ChunkUpdated(targetChunk, boundaryIndex, boundaryValue, targetChunk.changes(boundaryIndex), msg.sender, block.timestamp);
     }
 
     // solium-disable-next-line security/no-block-members
