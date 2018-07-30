@@ -150,9 +150,8 @@ class Canvas extends React.Component {
     }
 
     // determine mouse position in chunks
-    const chunkSize = 128 * this.zoom
-    const chunkX = Math.floor(mousePixel.x / chunkSize)
-    const chunkY = Math.floor(mousePixel.y / chunkSize)
+    const chunkX = Math.floor(mousePixel.x / 128)
+    const chunkY = Math.floor(mousePixel.y / 128)
     
     if (this.mouseChunk.x !== chunkX || this.mouseChunk.y !== chunkY) {
       this.mouseChunk = { x: chunkX, y: chunkY }

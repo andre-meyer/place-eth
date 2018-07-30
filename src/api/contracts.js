@@ -1,4 +1,4 @@
-import TC from 'truffle-contract'
+import TruffleContract from 'truffle-contract'
 import EthJS from 'ethjs'
 
 let provider = new EthJS.HttpProvider('https://rinkeby.infura.io/')
@@ -22,8 +22,7 @@ export const getContract = async (name) => {
   const contract = TruffleContract(artifact)
 
   try {
-    const csp = await contract.setProvider(provider)
-    
+    await contract.setProvider(provider)
     return contract
   } catch (e) {
     throw new Error(e)
