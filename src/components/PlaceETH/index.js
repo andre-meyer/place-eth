@@ -2,6 +2,7 @@ import React from 'react'
 import Dropzone from 'react-dropzone'
 import Modal from 'react-modal'
 import { HotKeys } from 'react-hotkeys'
+import querystring from 'querystring'
 
 import Canvas from 'components/Canvas'
 import Toolbar from 'components/Toolbar'
@@ -38,12 +39,15 @@ class PlaceETH extends React.Component {
   constructor(props) {
     super(props)
 
+    const urlSearchParam = location.search.substr(1)
+    const urlParams = querystring.parse(urlSearchParam)
+
     this.state = {
       chunksLoaded: [],
       selectedChunk: undefined,
       hoveringChunk: undefined,
       mouseBoundary: { x: 0, y: 0 },
-      toolMode: 'move',
+      toolMode: urlParams.toolMode ? urlParams.toolMode : 'move',
       drawOptions: {
         colorIndex: 0,
       },
@@ -174,6 +178,10 @@ class PlaceETH extends React.Component {
       toolMode: 'draw',
       placingImage: undefined,
     })
+
+    this.forceUpdate()
+    this.canvasRef.renderOnCanvas()
+    this.canvasRef.forceUpdate()
   }
 
   handleCloseModal() {

@@ -488,7 +488,7 @@ class Canvas extends React.Component {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(this.props.placingImage, 0, 0)
 
-      this.ctx.drawImage(canvas, this.placePosition.x + -this.props.placingImage.width / 2, this.placePosition.y + -this.props.placingImage.height / 2)
+      this.ctx.drawImage(canvas, this.placePosition.x - 64, this.placePosition.y - 64)
     }
     
     //this.ctx.restore()

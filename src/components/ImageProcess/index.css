@@ -33,3 +33,9 @@
 .tools h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
+
+.tools button {
+  display: block;
+  width: 100%;
+  margin: 5px 0;
+}
