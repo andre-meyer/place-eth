@@ -123,14 +123,14 @@ contract('PlaceETH', (accounts) => {
     await placeETH.commit(changes.boundaryX, changes.boundaryY, changes.boundaryValues, { gas: 0xfffff })
   })
 
-  it.only('is able to commit a lot of changes, in 4 chunks', async () => {
+  it('is able to commit a lot of changes, in 4 chunks', async () => {
     const placeETH = await PlaceETH.deployed()
 
     const txQueue = []
 
     let amountOfChanges = 0
     let currentGasSum = 0
-    while(amountOfChanges < 80) {
+    while(amountOfChanges < 40) {
       const changes = Object.keys(Array(amountOfChanges++).fill()).reduce((changeList, boundaryIndex) => {
         const x = (((boundaryIndex % 16) + 16) % 16)
         const y = Math.floor(boundaryIndex / 16)

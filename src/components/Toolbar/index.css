@@ -7,9 +7,15 @@
   border-radius: 10px;
 
   background: rgba(230, 230, 230, 0.85);
-  text-align: justify;
   font-size: 14px;
+}
 
+.toolbar p {
+  text-align: justify;
+}
+
+.toolbar .commitTools input {
+  width: 100%;
 }
 
 

@@ -488,7 +488,9 @@ class Canvas extends React.Component {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(this.props.placingImage, 0, 0)
 
+      this.ctx.globalAlpha = 0.1
       this.ctx.drawImage(canvas, this.placePosition.x - 64, this.placePosition.y - 64)
+      this.ctx.globalAlpha = 1
     }
     
     //this.ctx.restore()
@@ -540,6 +542,8 @@ class Canvas extends React.Component {
   }
 
   render() {
+    this.renderOnCanvas()
+
     return (
       <div className={cx('canvasWrapper')}>
         <canvas
