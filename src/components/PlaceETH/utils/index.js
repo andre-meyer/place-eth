@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js'
 
 export const collectTransactionChanges = (drawSpace, changeLogKeyBoundaries) => {
   const changes = changeLogKeyBoundaries
-    .filter((boundaryKey, i) => changeLogKeyBoundaries.indexOf(boundaryKey, i) === -1)
+    .filter((boundaryKey, i) => !changeLogKeyBoundaries.includes(boundaryKey, i+1))
     .map((boundaryKey) => {
       const [ chunkX, chunkY, boundaryX, boundaryY ] = boundaryKey.split(',').map((s) => parseInt(s, 10))
       const chunkKey = `${chunkX},${chunkY}`
