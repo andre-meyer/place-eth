@@ -14,6 +14,9 @@ const ToolbarInfo = () => (
   <React.Fragment>
     <p>Welcome to PlaceETH, your cutting edge advertisment space and overpriced low-resolution 16-color image storage.</p>
     <p>Please connect with Metamask to interact with this webpage on either <External href="https://rinkeby.io/">Rinkeby</External> or <del>Mainnet</del> (not yet), if you're feeling adventurous.</p>
+    <br />
+    <p>You can drag and drop images into this window to upload them.</p>
+    <p>Once you commit your changes and your transactions are 100% complete, you might need to wait until they have been mined. Sometimes this takes so long that it will close, and it looks like it silently failed. If that happens simply wait for the transactions to get mined. They will still show up eventually</p>
 
     {/*<p>Created by <Author href="https://twitter.com/andremeyer93">@andremeyer93</Author></p>*/}
   </React.Fragment>
