@@ -1,7 +1,8 @@
 import React from 'react'
 import classnames from 'classnames/bind'
 import style from './index.css'
-import { mod } from 'utils'
+import { mod } from '~utils'
+import BigNumber from 'bignumber.js'
 
 import { External, Author } from 'components/Link'
 
@@ -21,7 +22,12 @@ const ToolbarInfo = () => (
 )
 
 const ToolbarDrawing = ({
-  changeListCounts: { chunkCreations, chunkUpdates, boundaryChanges },
+  changedPixelCount,
+  costs: {
+    gasCostEstimation,
+    changeCostEstimation,
+    status,
+  },
   onCommitChanges,
   onRevertChanges,
   commitProgress,
@@ -31,24 +37,19 @@ const ToolbarDrawing = ({
   onChangeGasPrice,
 }) => (
   <React.Fragment>
-    {(chunkCreations > 0 || chunkUpdates > 0 || boundaryChanges > 0) ? (
+    {(changedPixelCount > 0) ? (
       <>
-        <p>Estimated Gas Usage:</p>
-        <div className={cx('changeList')}>
-          <span className={cx('count')}>{chunkCreations}x Creation of Image Chunks</span>
-            {chunkCreations > 0 && <span className={cx('gas')}>+ {chunkCreations * GAS_ESTIMATE_CHUNK_CREATE}</span>}
-          <span className={cx('count')}>{chunkUpdates}x Updates of Image Chunks</span>
-            {chunkUpdates > 0 && <span className={cx('gas')}>+ {chunkUpdates * GAS_ESTIMATE_CHUNK_UPDATE}</span>}
-          <span className={cx('count')}>{boundaryChanges}x Changes in Pixelboundaries</span>
-            {boundaryChanges > 0 && <span className={cx('gas')}>+ {boundaryChanges * GAS_ESTIMATE_PLACE_PIXEL}</span>}
-        </div>
-        <div className={cx('summary')}>
-          <p>Total Cost: {
-            (chunkCreations * GAS_ESTIMATE_CHUNK_CREATE) +
-            (chunkUpdates * GAS_ESTIMATE_CHUNK_UPDATE) +
-            (boundaryChanges * GAS_ESTIMATE_PLACE_PIXEL)
-          }</p>
-        </div>
+        <p>{changedPixelCount} pixels have been updated</p>
+        {status === 'display' ? (
+          <>
+            <p>Estimated Gas Usage: <strong>{gasCostEstimation}</strong> Gas</p>
+            <p>Estimated Change Price: <strong>{(changeCostEstimation / 1e18).toFixed(4)} ETH</strong></p>
+          </>
+        ) : (
+          <>
+            <p>Calculating Costs...</p>
+          </>
+        )}
         {commitStatus === 'running' && (
           <div className={cx('commitstatus')}>
             Running Transactions... {(commitProgress * 100).toFixed(2)}%

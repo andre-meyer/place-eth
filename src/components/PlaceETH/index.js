@@ -17,13 +17,19 @@ import LoadingComponent from './Loading'
 import WithContract from 'WithContract'
 
 import {
-  collectTransactionChanges,
+  collectChangedPixelBoundaries,
 } from './utils'
 
 import {
   range,
   mod,
-} from 'utils'
+} from '~utils'
+
+import {
+  getMinGasCost,
+  getMaxGasCost,
+} from '~utils/gascost'
+
 
 import {
   composeChunkData,
@@ -32,6 +38,8 @@ import {
   renderPixelBoundary,
 } from 'api/placeeth'
 
+const minCommitCost = getMinGasCost('PlaceETH', 'commit')
+const maxCommitCost = getMaxGasCost('PlaceETH', 'commit')
 
 Modal.setAppElement('#root')
 
@@ -51,10 +59,11 @@ class PlaceETH extends React.Component {
       drawOptions: {
         colorIndex: 0,
       },
-      changeListCounts: {
-        chunkCreations: 0,
-        chunkUpdates: 0,
-        boundaryChanges: 0,
+      changedPixelCount: 0,
+      costs: {
+        gasCostEstimation: 0,
+        changeCostEstimation: 0,
+        status: 'display'
       },
       droppedImage: undefined,
       placingImage: undefined,
@@ -96,6 +105,11 @@ class PlaceETH extends React.Component {
     this.startEventWatcher()
   }
 
+  componentWillUnmount() {
+    console.log('removing watchers')
+    this.watchers.forEach((watcher) => watcher.stopWatching())
+  }
+
   handleGasPriceChange(e) {
     const value = e.target.value
 
@@ -105,16 +119,16 @@ class PlaceETH extends React.Component {
   async startChunkLoader() {
     const { deployed: { PlaceETH }, contracts: { Chunk } } = this.props
     const chunkCount = (await PlaceETH.getChunkCount()).toNumber()
-
     range(chunkCount).forEach(async (chunkIndex) => {
       const chunkAddress = await PlaceETH.chunks(chunkIndex)
+      console.log(chunkAddress)
       const {
         chunkKey,
         ...chunk
       } = await composeChunkData(chunkAddress, Chunk)
+      console.log({ chunkKey, chunk })
 
       this.chunks[chunkKey] = chunk
-
       this.canvasRef.renderOnCanvas()
     })
   }
@@ -227,41 +241,28 @@ class PlaceETH extends React.Component {
     })
   }
 
-  handleUpdateCounts(chunkUpdates, boundaryChanges, chunkCreations) {
+  async handleUpdateCounts(pixelCount) {
     this.setState({
-      changeListCounts: {
-        chunkCreations,
-        chunkUpdates,
-        boundaryChanges,
+      changedPixelCount: pixelCount,
+      costs: {
+        status: 'loading'
       }
     })
-  }
-
-  handleRevertChanges() {
-    this.canvasRef.clearDrawSpace()
-
-    this.setState({
-      commitStatus: undefined,
-      commitProgress: 0,
-      placingImage: undefined,
-    })
-  }
-
-  async handleCommitChanges() {
-    const changes = collectTransactionChanges(this.canvasRef.drawSpace, this.canvasRef.touchedPixelBoundaries)
-    const changesTotal = changes.length
-
-    await this.setState({ commitStatus: 'running', commitProgress: 0 })
-    const txOptions = {
-      from: this.props.account,
-      gas: 7500000,
-      gasPrice: this.state.gasPrice * 1e9,
+    let changes = []
+    try {
+      changes = collectChangedPixelBoundaries(Object.assign({}, this.canvasRef.drawSpace), this.canvasRef.changedBoundaries, this.chunks)
+    } catch (error) {
+      console.warn('Could not finish updateCounts, collection of changes failed')
+      console.error(error)
+      return
     }
-
-    const txQueue = []
+    
+    const changePrice = changes.reduce((acc, change) => acc + change.boundaryCost, 0)
 
     let gasSum = 0
-    let commitErrors = 0
+    let createdChunks = []
+    let changeIndex = 0
+
     while(changes.length > 0) {
       let commitGas = 0
       let boundariesX = []
@@ -274,11 +275,15 @@ class PlaceETH extends React.Component {
         boundariesX.push(change.x)
         boundariesY.push(change.y)
         boundaryValues.push(change.boundaryValue)
-  
-        let gasCost = 0
+        const chunkX = Math.floor(change.x / 16)
+        const chunkY = Math.floor(change.y / 16)
+        const chunkKey = `${chunkX},${chunkY}`
+
+        let gasCost = createdChunks.includes(chunkKey) ? minCommitCost : maxCommitCost
         try {
-          gasCost = await this.props.deployed.PlaceETH.commit.estimateGas(boundariesX, boundariesY, boundaryValues, txOptions)
+          createdChunks.push(chunkKey)
         } catch (e) {
+          commitErrors++
           console.error(e)
         }
   
@@ -286,10 +291,77 @@ class PlaceETH extends React.Component {
       } while (commitGas < 6e6 && changes.length > 0)
       console.log(`batched ${boundariesX.length} changes with ${commitGas} gas`)
       gasSum += commitGas
+    }
+
+    this.setState({
+      costs: {
+        gasCostEstimation: gasSum,
+        changeCostEstimation: changePrice,
+        status: 'display',
+      },
+    })
+  }
+
+  handleRevertChanges() {
+    this.canvasRef.clearDrawSpace()
+
+    this.setState({
+      commitStatus: undefined,
+      commitProgress: 0,
+      placingImage: undefined,
+      changedPixelCount: 0,
+      costs: {
+        status: 'display',
+      }
+    })
+  }
+
+  async handleCommitChanges() {
+    const changes = collectChangedPixelBoundaries(this.canvasRef.drawSpace, this.canvasRef.changedBoundaries, this.chunks)
+    const changesTotal = changes.length
+
+    await this.setState({ commitStatus: 'running', commitProgress: 0 })
+    const txOptions = {
+      from: this.props.account,
+      gas: 7500000,
+      gasPrice: this.state.gasPrice * 1e9,
+      value: 1e18,
+    }
+
+    const txQueue = []
+
+    let gasSum = 0
+    let commitErrors = 0
+    const createdChunks = Object.keys(this.chunks)
+
+    while(changes.length > 0) {
+      let commitGas = 0
+      let boundariesX = []
+      let boundariesY = []
+      let boundaryValues = []
+      let changePrice = 0
+      
+      do {
+        const change = changes.pop()
+ 
+        boundariesX.push(change.x)
+        boundariesY.push(change.y)
+        boundaryValues.push(change.boundaryValue)
+        changePrice += change.boundaryCost
+        const chunkX = Math.floor(change.x / 16)
+        const chunkY = Math.floor(change.y / 16)
+        const chunkKey = `${chunkX},${chunkY}`
+
+        let gasCost = createdChunks.includes(chunkKey) ? minCommitCost : maxCommitCost
+        commitGas += gasCost
+        createdChunks.push(chunkKey)
+      } while (commitGas < 6e6 && changes.length > 0)
+      console.log(`batched ${boundariesX.length} changes with ${commitGas} gas with a boundary price of ${changePrice} wei`)
+      gasSum += commitGas
 
       try {
-        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas })
-        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas }))
+        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: changePrice })
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: changePrice }))
       } catch (e) {
         await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal), commitErrors: ++commitErrors })
         console.error(e)
@@ -297,13 +369,14 @@ class PlaceETH extends React.Component {
 
       await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal) })
     }
+
     console.log({ gasSum })
 
     await this.setState({ commitStatus: 'waiting', commitProgress: 1 - (changes.length / changesTotal) })
 
     await Promise.all(txQueue)
 
-    await this.setState({ commitStatus: undefined, commitProgress: 1 - (changes.length / changesTotal) })
+    await this.setState({ toolMode: 'move', commitStatus: undefined, commitProgress: 1 - (changes.length / changesTotal) })
 
     this.canvasRef.clearDrawSpace()
   }
@@ -343,7 +416,8 @@ class PlaceETH extends React.Component {
             selectedChunk={this.state.selectedChunk}
             hoveringChunk={this.state.hoveringChunk}
             mouseBoundary={this.state.mouseBoundary}
-            changeListCounts={this.state.changeListCounts}
+            changedPixelCount={this.state.changedPixelCount}
+            costs={this.state.costs}
             onCommitChanges={this.handleCommitChanges}
             onRevertChanges={this.handleRevertChanges}
             onPlace={this.handlePlaceOnCanvas}

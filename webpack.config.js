@@ -24,7 +24,8 @@ module.exports = {
       path.resolve(__dirname, 'node_modules'),
     ],
     alias: {
-      '~style': path.resolve(__dirname, 'src', 'style')
+      '~style': path.resolve(__dirname, 'src', 'style'),
+      '~utils': path.resolve(__dirname, 'utils'),
     }
   },
   module: {

@@ -2,7 +2,7 @@ import React from 'react'
 import styles from './index.css'
 import classnames from 'classnames/bind'
 
-import { findColorInPalette, getColorComponentsForIndex } from 'utils/colors'
+import { findColorInPalette, getColorComponentsForIndex } from '~utils/colors'
 
 import { disablePixelSmoothing } from '../Canvas/utils/canvas'
 import { runDithering } from './utils/dither';

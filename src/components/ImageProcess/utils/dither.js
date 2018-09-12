@@ -1,4 +1,4 @@
-import { clamp } from 'utils'
+import { clamp } from '~utils'
 
 const addPixelErrorQuant = (img, pixelIndex, [errorR, errorG, errorB], quant) => {
   const pixelIndexBit = pixelIndex * 4

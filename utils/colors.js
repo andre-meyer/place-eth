@@ -1,6 +1,23 @@
-import { palette } from './colorPalette16.json'
+const palette = [
+  "#FFF",
+  "#AAA",
+  "#555",
+  "#000",
+  "#A00",
+  "#F55",
+  "#FA0",
+  "#FF5",
+  "#0A0",
+  "#5F5",
+  "#5FF",
+  "#0AA",
+  "#00A",
+  "#55F",
+  "#F5F",
+  "#A0A"
+]
 
-export const findColorNaive = (r, g, b) => {
+const findColorNaive = (r, g, b) => {
   const normR = r >> 4
   const normG = g >> 4
   const normB = b >> 4
@@ -18,7 +35,7 @@ export const findColorNaive = (r, g, b) => {
   return colorIndex
 }
 
-export const getColorForIndex = (i) => {
+const getColorForIndex = (i) => {
   if (!palette.hasOwnProperty(i)) {
     return '#fff'
   }
@@ -26,7 +43,7 @@ export const getColorForIndex = (i) => {
   return palette[i]
 }
 
-export const getColorComponentsForIndex = (i) => {
+const getColorComponentsForIndex = (i) => {
   const hexColor = getColorForIndex(i).toLowerCase()
 
 
@@ -37,7 +54,7 @@ export const getColorComponentsForIndex = (i) => {
   })
 }
 
-export const findColorInPalette = (targetR, targetG, targetB) => {
+const findColorInPalette = (targetR, targetG, targetB) => {
   let colorFound
   let colorDistance = 999999
 
@@ -62,6 +79,14 @@ export const findColorInPalette = (targetR, targetG, targetB) => {
   return colorFound
 }
 
-export const getColors = () => {
+const getColors = () => {
   return palette
+}
+
+module.exports = {
+  findColorInPalette,
+  findColorNaive,
+  getColorComponentsForIndex,
+  getColorForIndex,
+  getColors,
 }

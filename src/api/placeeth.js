@@ -1,5 +1,5 @@
-import { range } from 'utils'
-import { getColorComponentsForIndex } from 'utils/colors'
+import { range } from '~utils'
+import { getColorComponentsForIndex } from '~utils/colors'
 import leftPad from 'left-pad'
 
 export const renderPixelBoundary = (chunkCanvas, boundaryIndex, bnBoundaryValue) => {
@@ -40,8 +40,6 @@ export const renderPixelBoundary = (chunkCanvas, boundaryIndex, bnBoundaryValue)
 }
 
 export const renderPixelsForChunk = async (chunk) => {
-  // get all pixels
-  //const bytes = await Promise.all(range(256).map(async (byteIndex) => await chunk.pixels.call(byteIndex)))
   const boundaryValues = await chunk.getPixelData.call()
 
   const image = new ImageData(128, 128)
@@ -91,7 +89,7 @@ export const resolveChunksAndPixels = async (instance, Chunk) => {
 export const watchChunkUpdates = (instance, onChunkUpdate, Chunk) => {
   const watcher = instance.ChunkUpdated('pending')
 
-  watcher.watch(async (err, res) => {
+  return watcher.watch(async (err, res) => {
     if (err) {
       console.warn('ChunkUpdate Event:', err.toString())
       return
@@ -116,7 +114,7 @@ export const watchChunkUpdates = (instance, onChunkUpdate, Chunk) => {
 export const watchChunkCreations = (instance, onChunkCreation, Chunk) => {
   const watcher = instance.ChunkCreated('pending')
 
-  watcher.watch(async (err, res) => {
+  return watcher.watch(async (err, res) => {
     if (err) {
       console.warn('ChunkUpdate Event:', err.toString())
       return

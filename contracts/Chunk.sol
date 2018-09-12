@@ -9,6 +9,7 @@ contract Chunk {
   event PixelBoundaryUpdated(uint256 boundaryIndex, uint256 boundaryValue, uint8 changes);
 
   address public creator;
+  address public manager; /// @dev "msg.sender" on creation - this should be the place-eth contract
   Position public position;
   bool public created = false;
 
@@ -19,6 +20,10 @@ contract Chunk {
   /// @dev Array of changes that occured in each 8*8 pixel boundary. Used to determine pricing for writing in boundary
   uint8[256] public changes;
 
+  constructor() public {
+    manager = msg.sender;
+  }
+
   function spawn(int256 x, int256 y, address _creator) public {
     position.x = x;
     position.y = y;
@@ -28,6 +33,7 @@ contract Chunk {
   }
 
   function setPixelBoundary(uint256 boundIndex, uint256 pixelData) public {
+    require(msg.sender == manager, "can only be done by place-eth contract");
     require(boundIndex >= 0 && boundIndex <= 256, "pixelRowIndex out of bounds");
     pixels[boundIndex] = pixelData;
 

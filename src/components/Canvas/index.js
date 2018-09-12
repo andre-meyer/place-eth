@@ -3,12 +3,12 @@ import PropTypes from 'prop-types'
 import classnames from 'classnames/bind'
 import normalizeWheel from 'normalize-wheel'
 
-import { clamp, mod } from 'utils'
+import { clamp, mod } from '~utils'
+import { getColorForIndex, getColorComponentsForIndex} from '~utils/colors'
+
 import { eventToCanvasPos } from './utils/mouse'
 import { disablePixelSmoothing, createEmptyChunk } from './utils/canvas'
 import { doesColorMatchAtIndex } from './utils/image'
-
-import { getColorForIndex, getColorComponentsForIndex} from 'utils/colors'
 
 import style from './index.css'
 const cx = classnames.bind(style)
@@ -22,11 +22,7 @@ class Canvas extends React.Component {
     }
 
     this.state = {
-      changeList: {
-        boundariesChanged: [],
-        chunksChanged: [],
-        chunksCreated: [],
-      }
+      changedPixels: [],
     }
 
     this.canvasOffset = { x: 0, y: 0 }
@@ -41,9 +37,8 @@ class Canvas extends React.Component {
     this.prevMouseBoundary = { x: 0, y: 0 }
 
     this.drawSpace = {}
-    this.touchedChunks = []
-    this.touchedPixelBoundaries = []
-    this.createdChunks = []
+    this.changedPixels = []
+    this.changedBoundaries = []
 
     this.mouseIsDown = false;
     this.mouseStartDragPos = undefined
@@ -102,22 +97,15 @@ class Canvas extends React.Component {
   }
 
   updateCounts() {
-    if (this.touchedChunks.length || this.touchedPixelBoundaries.length || this.touchedChunks.length) {
-      let chunksChanged = [...this.state.changeList.chunksChanged, ...this.touchedChunks]
-      let boundariesChanged = [...this.state.changeList.boundariesChanged, ...this.touchedPixelBoundaries]
-      let chunksCreated = [...this.state.changeList.chunksCreated, ...this.createdChunks]
+    if (this.changedPixels.length) {
+      let changedPixels = [...this.state.changedPixels, ...this.changedPixels]
       // remove duplicates
-      chunksChanged = chunksChanged.filter((chunkKey, index) => !chunksChanged.includes(chunkKey, index+1))
-      boundariesChanged = boundariesChanged.filter((boundaryPos, index) => !boundariesChanged.includes(boundaryPos, index+1))
-      chunksCreated = chunksCreated.filter((chunkKey, index) => !chunksCreated.includes(chunkKey, index+1))
-
+      changedPixels = changedPixels.filter((pixel, index) => !changedPixels.includes(pixel, index+1))
       this.setState({
-        chunksChanged,
-        boundariesChanged,
-        chunksCreated,
+        changedPixels
       })
 
-      this.props.onUpdateCounts(chunksChanged.length, boundariesChanged.length, chunksCreated.length)
+      this.props.onUpdateCounts(changedPixels.length)
     }
 
   }
@@ -145,8 +133,8 @@ class Canvas extends React.Component {
     
     // determine mouse pixel (respecting zoom + offset)
     const mousePixel = {
-      x: Math.round((mousePosition.x - this.canvasOffset.x - this.viewPort.width/2) / this.zoom) + 64,
-      y: Math.round((mousePosition.y - this.canvasOffset.y - this.viewPort.height/2) / this.zoom) + 64,
+      x: Math.floor((mousePosition.x - this.canvasOffset.x - this.viewPort.width/2) / this.zoom) + 64,
+      y: Math.floor((mousePosition.y - this.canvasOffset.y - this.viewPort.height/2) / this.zoom) + 64,
     }
 
     // determine mouse position in chunks
@@ -238,15 +226,10 @@ class Canvas extends React.Component {
 
         // keeps only changes
         this.drawSpace[chunkKey].changeLog[mousePixelIndexInChunk] = 1
-  
-        if (!isExistingChunk) {
-          this.createdChunks.push(chunkKey)
-        } else {
-          this.touchedChunks.push(chunkKey)
-        }
-
+        
         const pixelBoundaryKey = `${chunkKey},${mod(Math.floor(mousePixel.x / 8), 16)},${mod(Math.floor(mousePixel.y / 8), 16)}`
-        this.touchedPixelBoundaries.push(pixelBoundaryKey)
+        this.changedBoundaries.push(pixelBoundaryKey)
+        this.changedPixels.push(`${mousePixel.x},${mousePixel.y}`)
       }
     }
 
@@ -257,9 +240,7 @@ class Canvas extends React.Component {
           x: this.mouseStartDragPos.x - mousePosition.x,
           y: this.mouseStartDragPos.y - mousePosition.y,
         }
-        //const mousePixelX = Math.round((mousePosition.x - this.canvasOffset.x) / this.zoom) + 64
-        //const mousePixelY = Math.round((mousePosition.y - this.canvasOffset.y) / this.zoom) + 64
-  
+        
         this.placePosition = {
           x: this.placePosition.x - Math.floor(mouseMovePos.x / this.zoom),
           y: this.placePosition.y - Math.floor(mouseMovePos.y / this.zoom)
@@ -303,6 +284,7 @@ class Canvas extends React.Component {
   }
 
   paintPlacingImage(placingImage) {
+    this.clearDrawSpace()
     const { width, height } = placingImage
 
     for(let imgX = 0; imgX < width; imgX++) {
@@ -361,14 +343,9 @@ class Canvas extends React.Component {
           // keeps only changes
           this.drawSpace[chunkKey].changeLog[positionInChunkIndex] = 1
     
-          if (!isExistingChunk) {
-            this.createdChunks.push(chunkKey)
-          } else {
-            this.touchedChunks.push(chunkKey)
-          }
-
           const pixelBoundaryKey = `${chunkKey},${mod(Math.floor(positionInChunk.x / 8), 16)},${mod(Math.floor(positionInChunk.y / 8), 16)}`
-          this.touchedPixelBoundaries.push(pixelBoundaryKey)
+          this.changedBoundaries.push(pixelBoundaryKey)
+          this.changedPixels.push(`${positionInChunk.x + chunkX * 128},${positionInChunk.y + chunkY * 128}`)
         }
         
         //const noChange = doesColorMatchAtIndex([r, g, b], this.drawSpace[chunkKey].original, mousePixelBitIndex)
@@ -380,17 +357,11 @@ class Canvas extends React.Component {
 
   clearDrawSpace() {
     this.drawSpace = {}
-    this.touchedChunks = []
-    this.touchedPixelBoundaries = []
-    this.createdChunks = []
+    this.changedPixels = []
 
     this.setState({
-      chunksChanged: 0,
-      boundariesChanged: 0,
-      chunksCreated: 0,
+      changedPixelCount: 0,
     })
-
-    this.props.onUpdateCounts(0, 0, 0)
   }
 
   renderHeatmapForChunk(chunkX, chunkY) {
@@ -451,7 +422,7 @@ class Canvas extends React.Component {
         const chunkKey = `${chunkX},${chunkY}`
         const chunk = this.props.chunks[chunkKey]
 
-        const drewChunk = this.drawSpace[chunkKey]
+        const drewChunk = this.drawSpace[chunkKey] && this.props.toolMode !== 'cost'
         if (drewChunk) {
           // if a chunk was drawn on already, exchange with "drawn on canvas"
           const drewChunk = this.drawSpace[chunkKey]
@@ -488,22 +459,16 @@ class Canvas extends React.Component {
       const ctx = canvas.getContext('2d')
       ctx.putImageData(this.props.placingImage, 0, 0)
 
-      this.ctx.globalAlpha = 0.1
+      this.ctx.globalAlpha = 0.75
       this.ctx.drawImage(canvas, this.placePosition.x - 64, this.placePosition.y - 64)
       this.ctx.globalAlpha = 1
     }
-    
-    //this.ctx.restore()
     
     // when drawing, render pixel at current mouse position
     if (this.props.toolMode === 'draw' && this.mouseChunk) {
       //this.ctx.save()
 
-      //this.ctx.translate(offsetX, offsetY)
-      //this.ctx.scale(this.zoom, this.zoom)
-
       this.ctx.fillStyle = getColorForIndex(this.props.drawOptions.colorIndex)
-      //this.ctx.fillRect(Math.floor((this.state.mousePosition.x - offsetX) / this.state.zoom), Math.floor((this.state.mousePosition.y - offsetY) / this.state.zoom), 100, 100)
       this.ctx.fillRect(this.mousePixel.x - 64, this.mousePixel.y - 64, 1, 1)
 
       this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'

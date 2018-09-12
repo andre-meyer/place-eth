@@ -1,6 +1,6 @@
 import React from 'react'
 import classnames from 'classnames/bind'
-import { getColors } from 'utils/colors'
+import { getColors } from '~utils/colors'
 
 import styles from './index.css'
 
