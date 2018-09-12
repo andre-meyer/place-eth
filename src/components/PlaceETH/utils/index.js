@@ -58,7 +58,7 @@ export const collectChangedPixelBoundaries = (drawSpace, changeLogKeyBoundaries,
       ).reverse().join('') // right aligned in binary
 
       const changeCountBoundary = chunk.changes[boundaryIndex] || 0
-      console.log({ changeCountBoundary })
+      
       const pixelsChangedInBoundary = 64 
       const priceForBoundary = pixelsChangedInBoundary * BASE_COST * PRICE_CLIMB[changeCountBoundary]
 
