@@ -18,8 +18,8 @@ contract PlaceETH is Ownable {
   /// @dev price climb is limited to 16
   uint16[16] PRICE_CLIMB = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597];
 
-  event ChunkCreated(Chunk chunk, address creator, uint256 timestamp);
-  event ChunkUpdated(Chunk chunk, uint256 boundaryIndex, uint256 boundaryValue, uint8 boundaryChanges, address creator, uint256 timestamp);
+  event ChunkCreated(Chunk chunk, address creator);
+  event ChunkUpdated(Chunk chunk, uint256 boundaryIndex, uint256 boundaryValue, uint8 boundaryChanges, address creator);
 
   Chunk[] public chunks;
   mapping(bytes32 => ChunkMapping) public chunkPositionMapping;
@@ -32,7 +32,7 @@ contract PlaceETH is Ownable {
     
     Chunk newChunk = new Chunk();
     newChunk.spawn(x, y, msg.sender);
-    emit ChunkCreated(newChunk, msg.sender, block.timestamp);
+    emit ChunkCreated(newChunk, msg.sender);
     
     ChunkMapping memory newMapping;
     newMapping.chunk = newChunk;
@@ -45,12 +45,12 @@ contract PlaceETH is Ownable {
   }
 
   function findOrCreateChunk(
-    int256 boundaryPositionX,
-    int256 boundaryPositionY
+    int32 boundaryPositionX,
+    int32 boundaryPositionY
   ) internal returns (Chunk affectedChunk) {
     /// @dev find the chunk at the position of the change. changes are within 8^2 pixel blocks, chunks are 128^2 pixels
-    int256 chunkX = (boundaryPositionX * 8) / 128;
-    int256 chunkY = (boundaryPositionY * 8) / 128;
+    int256 chunkX = (int256(boundaryPositionX) * 8) / 128;
+    int256 chunkY = (int256(boundaryPositionY) * 8) / 128;
     
     /// @dev stupid problem with integer division
     if (boundaryPositionX < 0 && boundaryPositionX % 16 != 0) {
@@ -72,11 +72,11 @@ contract PlaceETH is Ownable {
     return targetChunk;
   }
 
-  function commit(int256[] boundariesX, int256[] boundariesY, uint256[] boundaryValues) public payable {
+  function commit(int32[] boundariesX, int32[] boundariesY, uint256[] boundaryValues) public payable {
     uint256 amountToPay = 0;
     for(uint256 changeIndex = 0; changeIndex < boundariesX.length; changeIndex++) {
-      int256 boundaryPositionX = boundariesX[changeIndex];
-      int256 boundaryPositionY = boundariesY[changeIndex];
+      int32 boundaryPositionX = boundariesX[changeIndex];
+      int32 boundaryPositionY = boundariesY[changeIndex];
       uint256 boundaryValue = boundaryValues[changeIndex];
 
       Chunk targetChunk = findOrCreateChunk(boundaryPositionX, boundaryPositionY);
@@ -107,7 +107,7 @@ contract PlaceETH is Ownable {
       }
 
       targetChunk.setPixelBoundary(boundaryIndex, boundaryValue);
-      emit ChunkUpdated(targetChunk, boundaryIndex, boundaryValue, targetChunk.changes(boundaryIndex), msg.sender, block.timestamp);
+      emit ChunkUpdated(targetChunk, boundaryIndex, boundaryValue, targetChunk.changes(boundaryIndex), msg.sender);
     }
 
     /// @dev this returns overpaid ethers
