@@ -25,6 +25,9 @@ contract Chunk {
   }
 
   function spawn(int256 x, int256 y, address _creator) public {
+    require(msg.sender == manager, "only the main place-eth contract can spawn the contract");
+    require(created == false, "only one spawn is allowed");
+    
     position.x = x;
     position.y = y;
 

@@ -10,6 +10,9 @@ contract PlaceETH is Ownable {
     bool created;
   }
 
+  address public charity;
+  uint16 public factorCharity;
+  uint16 public factorOwner;
   uint256 public funds = 0;
 
   /// @dev The current base cost per pixel
@@ -23,6 +26,15 @@ contract PlaceETH is Ownable {
 
   Chunk[] public chunks;
   mapping(bytes32 => ChunkMapping) public chunkPositionMapping;
+
+  constructor(address _charity, uint16 _factorCharity) public {
+    require(_factorCharity <= 100, "can't donate more than 100%");
+
+    owner = msg.sender;
+    charity = _charity;
+    factorCharity = _factorCharity;
+    factorOwner = 100 - factorCharity;
+  }
 
   function createChunk(int256 x, int256 y) public returns (Chunk) {
     bytes32 positionHash = keccak256(abi.encodePacked(x, y));
@@ -88,11 +100,12 @@ contract PlaceETH is Ownable {
       uint256 boundaryIndex = (boundaryPosInChunkX + 16 * boundaryPosInChunkY);
 
       uint256 currentBoundary = targetChunk.pixels(boundaryIndex);
-      uint256 currentBoundaryChanges = targetChunk.changes(boundaryIndex);
+      uint16 currentBoundaryChanges = targetChunk.changes(boundaryIndex);
 
       /// @dev calculate amount of changes in boundary
       uint256 boundaryPrice = 0;
-      for (uint256 bitIndex = 0; bitIndex < 256; bitIndex += 4) {
+      for (uint256 bitIndex = 0; bitIndex <= 256; bitIndex += 4) {
+        /// @dev we shift by 0xF because we compare 4 bits of information - eg. the pixel color (0-f)
         if ((currentBoundary & (0xF << bitIndex)) == (boundaryValue & (0xF << bitIndex))) {
           boundaryPrice += (
             BASE_COST_PER_PIXEL * PRICE_CLIMB[currentBoundaryChanges]
@@ -110,9 +123,19 @@ contract PlaceETH is Ownable {
       emit ChunkUpdated(targetChunk, boundaryIndex, boundaryValue, targetChunk.changes(boundaryIndex), msg.sender);
     }
 
+    /// @dev 
+    transferFunds(amountToPay);
+
     /// @dev this returns overpaid ethers
-    funds += amountToPay;
     msg.sender.transfer(msg.value - amountToPay);
+  }
+
+  function transferFunds(uint256 amount) private {
+    /// @dev distribute to charity and owner
+    uint256 toOwner = amount * factorOwner / 100;
+    uint256 toCharity = amount - toOwner;
+    charity.transfer(toCharity);
+    owner.transfer(toOwner);
   }
 
   function getChunkCount() public view returns (uint256) {
