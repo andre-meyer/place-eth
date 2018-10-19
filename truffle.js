@@ -15,5 +15,12 @@ module.exports = {
       },
       network_id: '4',
     },
+    live: {
+      provider: function() {
+        const mnemonic = Buffer.from(secret.mnemonic, 'base64').toString('ascii')
+        return new HDWalletProvider(mnemonic, "https://mainnet.infura.io/");
+      },
+      network_id: '1',
+    }
   },
 };

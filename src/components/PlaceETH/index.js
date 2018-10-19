@@ -4,6 +4,7 @@ import Modal from 'react-modal'
 import { HotKeys } from 'react-hotkeys'
 import querystring from 'querystring'
 
+import Header from 'components/Header'
 import Canvas from 'components/Canvas'
 import Toolbar from 'components/Toolbar'
 import ToolmodeSelector from 'components/ToolmodeSelector'
@@ -399,6 +400,10 @@ class PlaceETH extends React.Component {
             onComplete={this.handlePlaceImage}
           /> 
           </Modal>
+          <Header
+            network={'rinkeby'}
+            lastEvent={this.state.eventLog[this.state.eventLog.length - 1]}
+          />
           <Canvas
             onSelectChunk={this.handleSelectChunk}
             onHoverChunk={this.handleHoverChunk}

@@ -10,7 +10,8 @@
     "migrate": "./node_modules/.bin/truffle migrate --reset --network development",
     "test": "./node_modules/.bin/truffle test --network development",
     "ganache": "./node_modules/.bin/ganache-cli -d --hostname 127.0.0.1 -p 8545 -i 123456789",
-    "migrate-test": "./node_modules/.bin/truffle migrate --reset --network rinkeby"
+    "migrate-test": "./node_modules/.bin/truffle migrate --network rinkeby",
+    "migrate-live": "./node_modules/.bin/truffle migrate --network live"
   },
   "keywords": [],
   "author": "",
@@ -18,7 +19,6 @@
   "dependencies": {
     "@babel/polyfill": "^7.0.0-beta.51",
     "bignumber.js": "git+https://github.com/frozeman/bignumber.js-nolookahead.git",
-    "diff": "^3.5.0",
     "ethjs": "^0.4.0",
     "ganache-cli": "^6.1.4",
     "left-pad": "^1.3.0",
@@ -26,7 +26,7 @@
     "moment": "^2.22.2",
     "normalize-wheel": "^1.0.1",
     "openzeppelin-solidity": "1.12.0-rc.2",
-    "pngjs": "^3.3.3",
+    "prompt-confirm": "^2.0.4",
     "querystring": "^0.2.0",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",

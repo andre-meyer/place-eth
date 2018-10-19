@@ -1,18 +1,8 @@
 import TruffleContract from 'truffle-contract'
 import EthJS from 'ethjs'
+import provider from './web3'
 
-let provider = new EthJS.HttpProvider('https://rinkeby.infura.io/')
 const eth = new EthJS(provider)
-
-if (window && window.web3 && window.web3.currentProvider) {
-  console.log('Using Metamask')
-  provider = window.web3.currentProvider
-} else {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Using Ganache-CLI')
-    provider = new EthJS.HttpProvider('http://localhost:8545')
-  }
-}
 
 eth.setProvider(provider)
 

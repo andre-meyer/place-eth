@@ -13,7 +13,6 @@ contract PlaceETH is Ownable {
   address public charity;
   uint16 public factorCharity;
   uint16 public factorOwner;
-  uint256 public funds = 0;
 
   /// @dev The current base cost per pixel
   uint256 constant BASE_COST_PER_PIXEL = 5 szabo;
