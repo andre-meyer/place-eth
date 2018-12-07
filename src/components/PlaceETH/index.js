@@ -348,12 +348,12 @@ class PlaceETH extends React.Component {
         boundariesX.push(change.x)
         boundariesY.push(change.y)
         boundaryValues.push(change.boundaryValue)
-        changePrice += Math.round(change.boundaryCost * 1.2)
+        changePrice += Math.round(change.boundaryCost)
         const chunkX = Math.floor(change.x / 16)
         const chunkY = Math.floor(change.y / 16)
         const chunkKey = `${chunkX},${chunkY}`
 
-        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.2) : Math.round(maxCommitCost * 1.2)
+        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.5) : Math.round(maxCommitCost * 1.5)
         commitGas += gasCost
         createdChunks.push(chunkKey)
       } while (commitGas < 6e6 && changes.length > 0)
