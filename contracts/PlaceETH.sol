@@ -103,9 +103,10 @@ contract PlaceETH is Ownable {
 
       /// @dev calculate amount of changes in boundary
       uint256 boundaryPrice = 0;
-      for (uint256 bitIndex = 0; bitIndex <= 256; bitIndex += 4) {
+      for (uint256 bitIndex = 0; bitIndex < 256; bitIndex += 4) {
         /// @dev we shift by 0xF because we compare 4 bits of information - eg. the pixel color (0-f)
-        if ((currentBoundary & (0xF << bitIndex)) == (boundaryValue & (0xF << bitIndex))) {
+        /// @dev if this value is different from the previous one, add the base cost to our sum of costs
+        if ((currentBoundary & (0xF << bitIndex)) != (boundaryValue & (0xF << bitIndex))) {
           boundaryPrice += (
             BASE_COST_PER_PIXEL * PRICE_CLIMB[currentBoundaryChanges]
           );

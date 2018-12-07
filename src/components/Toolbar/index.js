@@ -30,6 +30,7 @@ const ToolbarDrawing = ({
   },
   onCommitChanges,
   onRevertChanges,
+  onSelectImage,
   commitProgress,
   commitStatus,
   commitErrors,
@@ -73,7 +74,7 @@ const ToolbarDrawing = ({
       </>
     ) : (
       <>
-        <p>You can drag and drop images into this window to upload them.</p>
+        <p>You can drag and drop images into this window to upload them, or alternatively, click here: <input type="file" name="pic" onChange={(v) => onSelectImage(v.target.files)} /></p>
         <p>Once you commit your changes and your transactions are 100% complete, you might need to wait until they have been mined. Sometimes this takes so long that it times out, and it looks like it silently failed. If that happens simply wait for the transactions to get mined. They will still show up eventually</p>
       </>
     )}
@@ -89,17 +90,19 @@ const ToolbarPricemap = ({
   const changes = hoveringChunk ? hoveringChunk.changes[changeIndex] : 0
   return (
     <React.Fragment>
-      <p>{hoveringChunk && hoveringChunk.x} {hoveringChunk && hoveringChunk.y}@{mouseBoundary.x} {mouseBoundary.y}: {changes} times changes</p>
+      <p>{hoveringChunk && hoveringChunk.x} {hoveringChunk && hoveringChunk.y}@{mouseBoundary.x} {mouseBoundary.y}: {changes} times changed.</p>
     </React.Fragment>
   )
 }
 
 const ToolbarPlace = ({
-  onPlace
+  onPlace,
+  setToolmode,
 }) => {
   return (
     <React.Fragment>
       <button type="button" onClick={onPlace}>Place at current position</button>
+      <button type="button" onClick={() => setToolmode('move')}>Cancel</button>
     </React.Fragment>
   )
 }

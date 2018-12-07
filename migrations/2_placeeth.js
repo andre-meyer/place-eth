@@ -13,7 +13,7 @@ module.exports = async (deployer, network, [ defaultAccount, anyone ]) => {
     const tcPromise = new Promise(async (resolve, reject) => {
       web3.eth.getTransactionReceipt(placeEth.transactionHash, (err, res) => {
         if (err) return reject(err)
-        console.log(res)
+        //console.log(res)
         resolve(res)
       })
     })
@@ -24,7 +24,7 @@ module.exports = async (deployer, network, [ defaultAccount, anyone ]) => {
     const tcPromise = new Promise(async (resolve, reject) => {
       web3.eth.getTransactionReceipt(chunk.transactionHash, (err, res) => {
         if (err) return reject(err)
-        console.log(res)
+        //console.log(res)
         resolve(res)
       })
     })

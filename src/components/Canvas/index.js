@@ -357,7 +357,7 @@ class Canvas extends React.Component {
     this.drawSpace = {}
     this.changedPixels = []
 
-    this.setState({
+    return this.setState({
       changedPixelCount: 0,
     })
   }

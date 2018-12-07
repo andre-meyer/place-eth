@@ -280,7 +280,7 @@ class PlaceETH extends React.Component {
         const chunkY = Math.floor(change.y / 16)
         const chunkKey = `${chunkX},${chunkY}`
 
-        let gasCost = createdChunks.includes(chunkKey) ? minCommitCost : maxCommitCost
+        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.2) : Math.round(maxCommitCost * 1.2)
         try {
           createdChunks.push(chunkKey)
         } catch (e) {
@@ -348,12 +348,12 @@ class PlaceETH extends React.Component {
         boundariesX.push(change.x)
         boundariesY.push(change.y)
         boundaryValues.push(change.boundaryValue)
-        changePrice += change.boundaryCost
+        changePrice += Math.round(change.boundaryCost * 1.2)
         const chunkX = Math.floor(change.x / 16)
         const chunkY = Math.floor(change.y / 16)
         const chunkKey = `${chunkX},${chunkY}`
 
-        let gasCost = createdChunks.includes(chunkKey) ? minCommitCost : maxCommitCost
+        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.2) : Math.round(maxCommitCost * 1.2)
         commitGas += gasCost
         createdChunks.push(chunkKey)
       } while (commitGas < 6e6 && changes.length > 0)
@@ -361,8 +361,8 @@ class PlaceETH extends React.Component {
       gasSum += commitGas
 
       try {
-        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: changePrice })
-        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: changePrice }))
+        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: 1e17 })
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: 1e17 }))
       } catch (e) {
         await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal), commitErrors: ++commitErrors })
         console.error(e)
@@ -379,7 +379,8 @@ class PlaceETH extends React.Component {
 
     await this.setState({ toolMode: 'move', commitStatus: undefined, commitProgress: 1 - (changes.length / changesTotal) })
 
-    this.canvasRef.clearDrawSpace()
+    await this.canvasRef.clearDrawSpace()
+    this.canvasRef.updateCounts()
   }
 
   render() {
@@ -431,6 +432,8 @@ class PlaceETH extends React.Component {
             commitErrors={this.state.commitErrors}
             gasPrice={this.state.gasPrice}
             onChangeGasPrice={this.handleGasPriceChange}
+            onSelectImage={this.handleDropFile}
+            setToolmode={this.handleSetToolmode}
           />
           <ToolmodeSelector
             toolMode={this.state.toolMode}

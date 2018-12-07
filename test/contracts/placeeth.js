@@ -11,7 +11,7 @@ const { assertRevert } = require('openzeppelin-solidity/test/helpers/assertRever
 const waitForEvent = require('../../utils/truffle/waitForEvent')
 const { generateTestPixelBoundary } = require('../../utils/imagery')
 
-contract('PlaceETH', ([owner, charity, anyone]) => {
+contract('PlaceETH', ([owner, anyone]) => {
   it('is able to create new chunks', async () => {
     const placeETH = await PlaceETH.deployed()
     await placeETH.createChunk(0, 0, { from: owner })
@@ -33,8 +33,10 @@ contract('PlaceETH', ([owner, charity, anyone]) => {
 
   it('is able to create a new chunk at a different position', async () => {
     const placeETH = await PlaceETH.deployed()
-    const { receipt: { gasUsed } } = await placeETH.createChunk(0, -1, { from: owner })
+    const tx = await placeETH.createChunk(0, -1, { from: owner })
+    const { receipt: { gasUsed } } = tx
     priceLogger.addEntry('PlaceETH', 'createChunk', gasUsed)
+    
     const { args: { chunk: chunkAddress } } = await waitForEvent(placeETH, 'ChunkCreated')
 
     assert.isDefined(chunkAddress)
@@ -132,31 +134,84 @@ contract('PlaceETH', ([owner, charity, anyone]) => {
 
   it('pays the charity and the owner according to factors', async () => {
     const placeETH = await PlaceETH.deployed()
+    const charity = (await placeETH.charity.call())
 
     // filled with color "f"
-    const fullPixel = (new BigNumber(2)).pow(255)
+    const fullPixelBoundary = (new BigNumber(2)).pow(255).sub(1)
     const fullPixelCostOnFirstChange = 64 * 5e12
-    
     const prevBalanceOwner = (await web3.eth.getBalance(owner)).toNumber()
     const prevBalanceCharity = (await web3.eth.getBalance(charity)).toNumber()
 
     const changeCost = fullPixelCostOnFirstChange * 2
-
-    const tx = await placeETH.commit([3, -2], [4, -2], [fullPixel, fullPixel], { gasPrice: 0, value: changeCost, from: anyone })
+    
+    const tx = await placeETH.commit([3, -2], [4, -2], [fullPixelBoundary, fullPixelBoundary], { gasPrice: 0, value: changeCost, from: anyone })
     const { receipt: { gasUsed } } = tx
     priceLogger.addEntry('PlaceETH', 'commit', gasUsed)
-
     const newBalanceOwner = (await web3.eth.getBalance(owner)).toNumber()
     const newBalanceCharity = (await web3.eth.getBalance(charity)).toNumber()
 
+    
     const profitOwner = newBalanceOwner - prevBalanceOwner
     const profitCharity = newBalanceCharity - prevBalanceCharity
-
     const factorCharity = (await placeETH.factorCharity()).toNumber()
     const factorOwner = (await placeETH.factorOwner()).toNumber()
     
     // should've gotten balance on `owner` and to `charity`
     assert.equal(profitOwner, changeCost * factorOwner / 100, 'doesn\'t pay the right amount for owner')
     assert.equal(profitCharity, changeCost * factorCharity / 100, 'doesn\'t pay the right amount for charity')
+  })
+
+  it('requires eth depending on amount of changed pixels', async () => {
+    const placeETH = await PlaceETH.deployed()
+
+    // filled with color "f"
+    const pixelsChanged = 13
+    const fullPixel = generateTestPixelBoundary(13)
+    const fullPixelCostOnFirstChange = pixelsChanged * 5e12
+
+    const tx = await placeETH.commit([-3], [-2], [fullPixel], { gasPrice: 0, value: fullPixelCostOnFirstChange, from: anyone })
+    const { receipt: { gasUsed } } = tx
+    priceLogger.addEntry('PlaceETH', 'commit', gasUsed)
+
+    assert.isDefined(tx)
+  })
+
+  it('reverts when too little eth is paid to change pixels', async () => {
+    const placeETH = await PlaceETH.deployed()
+
+    // filled with color "f"
+    const pixelsChanged = 13
+    const fullPixel = generateTestPixelBoundary(13)
+    const fullPixelCostOnFirstChange = pixelsChanged * 5e12 // 5e12 is base price for unchanged chunks
+
+    const wrongChangePrice = fullPixelCostOnFirstChange - 1 // deduct 1 wei and it should fail
+
+    await assertRevert(placeETH.commit([-4], [-7], [fullPixel], { gasPrice: 0, value: wrongChangePrice, from: anyone }))
+
+    const fixedPrice = wrongChangePrice + 1
+
+    await placeETH.commit([-5], [-7], [fullPixel], { gasPrice: 0, value: fixedPrice, from: owner })
+  })
+
+  it('returns overpaid ether', async() => {
+    const placeETH = await PlaceETH.deployed()
+
+    // filled with color "f"
+    const pixelsChanged = 10
+    const fullPixel = generateTestPixelBoundary(pixelsChanged)
+    const fullPixelCostOnFirstChange = pixelsChanged * 5e12 // 5e12 is base price for unchanged chunks
+
+    // if this amount is not *actually* deducted from our balance, it must work
+    const extraWei = 1e12
+
+    const prevBalanceOwner = await web3.eth.getBalance(anyone)
+    const tx = await placeETH.commit([-4], [-6], [fullPixel], { gasPrice: 0, value: fullPixelCostOnFirstChange + extraWei, from: anyone })
+    const { receipt: { gasUsed } } = tx
+    
+    priceLogger.addEntry('PlaceETH', 'commit', gasUsed)
+    const newBalanceOwner = await web3.eth.getBalance(anyone)
+
+    const actualCost = prevBalanceOwner.sub(newBalanceOwner)
+    assert.equal(actualCost, fullPixelCostOnFirstChange)
   })
 })

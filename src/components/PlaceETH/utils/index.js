@@ -26,6 +26,7 @@ export const collectChangedPixelBoundaries = (drawSpace, changeLogKeyBoundaries,
       }
       const boundaryIndex = boundaryInChunk.x + 16 * boundaryInChunk.y
       
+      let changedPixels = 0;
       const boundaryPixels = range(8**2).reduce((boundaryData, pixelIndexString) => {
         const pixelIndex = parseInt(pixelIndexString, 10)
         const inBoundaryX = pixelIndex % 8
@@ -48,6 +49,7 @@ export const collectChangedPixelBoundaries = (drawSpace, changeLogKeyBoundaries,
           const b = chunkImage.data[pixelIndexBitInChunk + 2]
   
           boundaryData[pixelIndex] = findColorInPalette(r, g, b)  
+          changedPixels++
         }
 
         return boundaryData
@@ -58,9 +60,7 @@ export const collectChangedPixelBoundaries = (drawSpace, changeLogKeyBoundaries,
       ).reverse().join('') // right aligned in binary
 
       const changeCountBoundary = chunk.changes[boundaryIndex] || 0
-      
-      const pixelsChangedInBoundary = 64 
-      const priceForBoundary = pixelsChangedInBoundary * BASE_COST * PRICE_CLIMB[changeCountBoundary]
+      const priceForBoundary = changedPixels * BASE_COST * PRICE_CLIMB[changeCountBoundary]
 
       return {
         chunkX,
