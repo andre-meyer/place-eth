@@ -106,6 +106,11 @@ class Canvas extends React.Component {
       })
 
       this.props.onUpdateCounts(changedPixels.length)
+    } else {
+      this.setState({
+        changedPixels: []
+      })
+      this.props.onUpdateCounts(0)
     }
 
   }
@@ -282,7 +287,6 @@ class Canvas extends React.Component {
   }
 
   paintPlacingImage(placingImage) {
-    this.clearDrawSpace()
     const { width, height } = placingImage
 
     for(let imgX = 0; imgX < width; imgX++) {
@@ -356,6 +360,7 @@ class Canvas extends React.Component {
   clearDrawSpace() {
     this.drawSpace = {}
     this.changedPixels = []
+    this.changedBoundaries = []
 
     return this.setState({
       changedPixelCount: 0,

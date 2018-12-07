@@ -26,10 +26,8 @@ contract PlaceETH is Ownable {
   Chunk[] public chunks;
   mapping(bytes32 => ChunkMapping) public chunkPositionMapping;
 
-  constructor(address _charity, uint16 _factorCharity) public {
+  constructor(address _charity, uint16 _factorCharity) Ownable() public {
     require(_factorCharity <= 100, "can't donate more than 100%");
-
-    owner = msg.sender;
     charity = _charity;
     factorCharity = _factorCharity;
     factorOwner = 100 - factorCharity;

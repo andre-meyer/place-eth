@@ -12,6 +12,12 @@ const waitForEvent = require('../../utils/truffle/waitForEvent')
 const { generateTestPixelBoundary } = require('../../utils/imagery')
 
 contract('PlaceETH', ([owner, anyone]) => {
+  it('has the correct owner', async () => {
+    const placeETH = await PlaceETH.deployed()
+    const contractOwner = await placeETH.owner.call()
+
+    assert.strictEqual(contractOwner, owner, "owner must match")
+  })
   it('is able to create new chunks', async () => {
     const placeETH = await PlaceETH.deployed()
     await placeETH.createChunk(0, 0, { from: owner })

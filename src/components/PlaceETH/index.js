@@ -303,10 +303,11 @@ class PlaceETH extends React.Component {
     })
   }
 
-  handleRevertChanges() {
-    this.canvasRef.clearDrawSpace()
+  async handleRevertChanges() {
+    await this.canvasRef.clearDrawSpace()
+    await this.canvasRef.updateCounts()
 
-    this.setState({
+    await this.setState({
       commitStatus: undefined,
       commitProgress: 0,
       placingImage: undefined,
@@ -354,6 +355,7 @@ class PlaceETH extends React.Component {
         const chunkKey = `${chunkX},${chunkY}`
 
         let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.5) : Math.round(maxCommitCost * 1.5)
+        console.log(createdChunks.includes(chunkKey) ? "chunk was already created, using lower gasprice" : "chunk does not exist, using higher gasprice")
         commitGas += gasCost
         createdChunks.push(chunkKey)
       } while (commitGas < 6e6 && changes.length > 0)
@@ -361,8 +363,9 @@ class PlaceETH extends React.Component {
       gasSum += commitGas
 
       try {
-        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: 1e17 })
-        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: 1e17 }))
+        await this.props.deployed.PlaceETH.commit.call(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: changePrice })
+        console.log({ boundariesX, boundariesY, boundaryValues, options: { ...txOptions, gas: commitGas, value: 1e17 } })
+        txQueue.push(this.props.deployed.PlaceETH.commit(boundariesX, boundariesY, boundaryValues, { ...txOptions, gas: commitGas, value: changePrice }))
       } catch (e) {
         await this.setState({ commitStatus: 'running', commitProgress: 1 - (changes.length / changesTotal), commitErrors: ++commitErrors })
         console.error(e)

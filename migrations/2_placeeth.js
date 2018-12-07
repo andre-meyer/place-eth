@@ -11,7 +11,7 @@ module.exports = async (deployer, network, [ defaultAccount, anyone ]) => {
   
   deployer.deploy(PlaceETH, charity, charityFactor, { from: defaultAccount, gasPrice }).then((placeEth) => {
     const tcPromise = new Promise(async (resolve, reject) => {
-      web3.eth.getTransactionReceipt(placeEth.transactionHash, (err, res) => {
+      web3.eth.getTransactionReceipt(placeEth.transactionHash, async (err, res) => {
         if (err) return reject(err)
         //console.log(res)
         resolve(res)
