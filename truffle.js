@@ -1,5 +1,6 @@
-const secret = require('./secret.json')
 const HDWalletProvider = require('truffle-hdwallet-provider')
+
+const SEED = process.env.SEED
 
 module.exports = {
   networks: {
@@ -10,15 +11,13 @@ module.exports = {
     },
     rinkeby: {
       provider: function() {
-        const mnemonic = Buffer.from(secret.mnemonic, 'base64').toString('ascii')
-        return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/");
+        return new HDWalletProvider(SEED, "https://rinkeby.infura.io/");
       },
       network_id: '4',
     },
     live: {
       provider: function() {
-        const mnemonic = Buffer.from(secret.mnemonic, 'base64').toString('ascii')
-        return new HDWalletProvider(mnemonic, "https://mainnet.infura.io/");
+        return new HDWalletProvider(SEED, "https://mainnet.infura.io/");
       },
       network_id: '1',
     }

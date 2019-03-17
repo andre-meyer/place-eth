@@ -7,11 +7,9 @@
     "start": "NODE_ENV=development ./node_modules/.bin/webpack-dev-server --host 0.0.0.0 --client-log-level info --progress --hot --config webpack.config.js",
     "build": "NODE_ENV=production ./node_modules/.bin/webpack -p",
     "debug": "./node_modules/.bin/truffle debug",
-    "migrate": "./node_modules/.bin/truffle migrate --reset --network development",
+    "migrate": "./node_modules/.bin/truffle migrate",
     "test": "./node_modules/.bin/truffle test --network development",
-    "ganache": "./node_modules/.bin/ganache-cli -d --hostname 127.0.0.1 -p 8545 -i 123456789",
-    "migrate-test": "./node_modules/.bin/truffle migrate --network rinkeby",
-    "migrate-live": "./node_modules/.bin/truffle migrate --network live"
+    "ganache": "./node_modules/.bin/ganache-cli -d --hostname 127.0.0.1 -p 8545 -i 123456789"
   },
   "keywords": [],
   "author": "",
