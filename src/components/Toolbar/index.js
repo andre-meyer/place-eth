@@ -59,7 +59,7 @@ const ToolbarDrawing = ({
         {status === 'display' ? (
           <>
             <p>Estimated Gas Usage: <strong>{gasCostEstimation}</strong> Gas</p>
-            <p>Estimated Change Price: <strong>{(changeCostEstimation / 1e18).toFixed(4)} ETH</strong></p>
+            <p>Estimated Change Price: <strong>{(((gasCostEstimation * gasPrice * 1e9) / 1e18) + changeCostEstimation / 1e18).toFixed(4)} ETH</strong></p>
           </>
         ) : (
           <>

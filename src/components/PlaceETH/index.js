@@ -285,7 +285,13 @@ class PlaceETH extends React.Component {
         const chunkY = Math.floor(change.y / 16)
         const chunkKey = `${chunkX},${chunkY}`
 
-        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.2) : Math.round(maxCommitCost * 1.2)
+        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost) : Math.round(maxCommitCost)
+
+        if (gasCost + commitGas > blockGasLimit) {
+          // don't force a change in if it clearly goes over block gas limit.
+          changes.push(change)
+          break;
+        }
         try {
           createdChunks.push(chunkKey)
         } catch (e) {
@@ -362,6 +368,11 @@ class PlaceETH extends React.Component {
         const chunkKey = `${chunkX},${chunkY}`
 
         let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.5) : Math.round(maxCommitCost * 1.5)
+        if (gasCost + commitGas > blockGasLimit) {
+          // don't force a change in if it clearly goes over block gas limit.
+          changes.push(change)
+          break;
+        }
         console.log(createdChunks.includes(chunkKey) ? "chunk was already created, using lower gasprice" : "chunk does not exist, using higher gasprice")
         commitGas += gasCost
         createdChunks.push(chunkKey)
@@ -391,10 +402,6 @@ class PlaceETH extends React.Component {
 
     await this.canvasRef.clearDrawSpace()
     this.canvasRef.updateCounts()
-  }
-
-  handleOnChange({ value }) {
-    this.setState({ myThing: value })
   }
 
   render() {

@@ -64,11 +64,21 @@ export const getBlockGasLimit = async () => {
     })
   })
   
-  if (!block) return 5e6 // 5 million as a safe fallback?
+  if (!block) return 5e6 // 5 million as a safe fallback? should only occour on empty ganache
 
   // gaslimit should totally fit in a num
-  return block.gasLimit.toNumber() - 1e6
+  return block.gasLimit.toNumber()
 }
+
+export const getBalance = async () => {
+  const accounts = await getAccounts()
+
+  const provider = await getEthJsInstance()
+
+  return (await provider.getBalance(accounts[0])).toString()
+}
+
+window.getBalance = getBalance
 
 export const waitForEventOnce = (contract, event, args = {}) => new Promise((resolve, reject) => {
   const watcher = contract[event](args)
