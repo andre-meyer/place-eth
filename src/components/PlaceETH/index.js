@@ -31,6 +31,9 @@ import {
   getMaxGasCost,
 } from '~utils/gascost'
 
+import {
+  getBlockGasLimit
+} from 'api/contracts'
 
 import {
   composeChunkData,
@@ -39,8 +42,8 @@ import {
   renderPixelBoundary,
 } from 'api/placeeth'
 
-const minCommitCost = getMinGasCost('PlaceETH', 'commit')
-const maxCommitCost = getMaxGasCost('PlaceETH', 'commit')
+const minCommitCost = getMaxGasCost('PlaceETH', 'commit')
+const maxCommitCost = getMaxGasCost('PlaceETH', 'commit') + getMaxGasCost('PlaceETH', 'createChunk')
 
 Modal.setAppElement('#root')
 
@@ -264,6 +267,8 @@ class PlaceETH extends React.Component {
     let createdChunks = []
     let changeIndex = 0
 
+    const blockGasLimit = await getBlockGasLimit()
+
     while(changes.length > 0) {
       let commitGas = 0
       let boundariesX = []
@@ -289,7 +294,7 @@ class PlaceETH extends React.Component {
         }
   
         commitGas += gasCost
-      } while (commitGas < 6e6 && changes.length > 0)
+      } while (commitGas < blockGasLimit && changes.length > 0)
       console.log(`batched ${boundariesX.length} changes with ${commitGas} gas`)
       gasSum += commitGas
     }
@@ -322,7 +327,7 @@ class PlaceETH extends React.Component {
     const changes = collectChangedPixelBoundaries(this.canvasRef.drawSpace, this.canvasRef.changedBoundaries, this.chunks)
     const changesTotal = changes.length
 
-    await this.setState({ commitStatus: 'running', commitProgress: 0 })
+    await this.setState({ commitStatus: 'running', commitProgress: 0, commitErrors: 0 })
     const txOptions = {
       from: this.props.account,
       gas: 7500000,
@@ -335,6 +340,8 @@ class PlaceETH extends React.Component {
     let gasSum = 0
     let commitErrors = 0
     const createdChunks = Object.keys(this.chunks)
+
+    const blockGasLimit = await getBlockGasLimit()
 
     while(changes.length > 0) {
       let commitGas = 0
@@ -358,7 +365,7 @@ class PlaceETH extends React.Component {
         console.log(createdChunks.includes(chunkKey) ? "chunk was already created, using lower gasprice" : "chunk does not exist, using higher gasprice")
         commitGas += gasCost
         createdChunks.push(chunkKey)
-      } while (commitGas < 6e6 && changes.length > 0)
+      } while (commitGas < blockGasLimit && changes.length > 0)
       console.log(`batched ${boundariesX.length} changes with ${commitGas} gas with a boundary price of ${changePrice} wei`)
       gasSum += commitGas
 
@@ -384,6 +391,10 @@ class PlaceETH extends React.Component {
 
     await this.canvasRef.clearDrawSpace()
     this.canvasRef.updateCounts()
+  }
+
+  handleOnChange({ value }) {
+    this.setState({ myThing: value })
   }
 
   render() {

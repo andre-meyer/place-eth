@@ -2,7 +2,6 @@ import React from 'react'
 import classnames from 'classnames/bind'
 import style from './index.css'
 import { mod } from '~utils'
-import BigNumber from 'bignumber.js'
 
 import { External, Author } from 'components/Link'
 
@@ -12,12 +11,28 @@ const GAS_ESTIMATE_CHUNK_CREATE = 583369
 const GAS_ESTIMATE_CHUNK_UPDATE = 67467
 const GAS_ESTIMATE_PLACE_PIXEL = 104106
 
+const PRICE_CLIMB = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]
+const BASE_PRICE = 1e12
+
+const MIN_DECIMAL_PLACES = 8
+const MIN_DECIMAL_VAL = Math.pow(10, -MIN_DECIMAL_PLACES)
+
+const formatCost = (num) => {
+  if (num < MIN_DECIMAL_VAL) return `<${MIN_DECIMAL_VAL}`
+
+  // truncate decimal places
+  const formated = num.toString()
+  const decimalPos = formated.indexOf(".")
+
+  return parseFloat(formated.substr(0, decimalPos + MIN_DECIMAL_PLACES)).toString()
+}
+
 const ToolbarInfo = () => (
   <React.Fragment>
     <p>Welcome to PlaceETH, your cutting edge advertisment space and overpriced low-resolution 16-color image storage.</p>
     <p>Please connect with Metamask to interact with this webpage on either <External href="https://rinkeby.io/">Rinkeby</External> or <strong>Mainnet</strong>, if you're feeling adventurous.</p>
 
-    {/*<p>Created by <Author href="https://twitter.com/andremeyer93">@andremeyer93</Author></p>*/}
+    {<p>Created by <Author href="https://twitter.com/andremeyer93">@andremeyer93</Author>. <em>I take absolutely no responsibility for lost funds, this page is to be considered experimental and unstable.</em></p>}
   </React.Fragment>
 )
 
@@ -54,7 +69,7 @@ const ToolbarDrawing = ({
         {commitStatus === 'running' && (
           <div className={cx('commitstatus')}>
             Running Transactions... {(commitProgress * 100).toFixed(2)}%
-            <meter value={commitProgress} min={0} max={1} />
+            <meter value={commitProgress} min={0} max={1} /><br />
             {commitErrors > 0 && <strong>{commitErrors} errors occured during transactions...</strong>}
           </div>
         )}
@@ -89,9 +104,14 @@ const ToolbarPricemap = ({
   const changeIndex = mod(mouseBoundary.x,16) + 16 * mod(mouseBoundary.y, 16)
   const changes = hoveringChunk ? hoveringChunk.changes[changeIndex] : 0
   return (
-    <React.Fragment>
-      <p>{hoveringChunk && hoveringChunk.x} {hoveringChunk && hoveringChunk.y}@{mouseBoundary.x} {mouseBoundary.y}: {changes} times changed.</p>
-    </React.Fragment>
+    <>
+      <p>This will display the costs of individual pixel boundaries of the canvas.</p>
+      {hoveringChunk ? <p>
+        <span>The pixel boundary you're hovering on has {changes > 0 ? `been changed ${changes} times` : 'not yet been changed'}. Costing approx {formatCost((PRICE_CLIMB[Math.min(changes, 16)] * BASE_PRICE + GAS_ESTIMATE_CHUNK_UPDATE + GAS_ESTIMATE_PLACE_PIXEL) / 1e18)} &Xi; per pixel.</span>
+      </p> : <p>
+        <span>The pixel boundary you're hovering on has not yet been created. You will have to pay for the gas to create this area of the canvas. You will pay atleast {formatCost((BASE_PRICE + GAS_ESTIMATE_CHUNK_CREATE + GAS_ESTIMATE_PLACE_PIXEL) / 1e18)} &Xi; per pixel. </span>
+      </p>}
+    </>
   )
 }
 
@@ -101,6 +121,7 @@ const ToolbarPlace = ({
 }) => {
   return (
     <React.Fragment>
+      <strong>Placing at current position might freeze this page for a moment.</strong>
       <button type="button" onClick={onPlace}>Place at current position</button>
       <button type="button" onClick={() => setToolmode('move')}>Cancel</button>
     </React.Fragment>

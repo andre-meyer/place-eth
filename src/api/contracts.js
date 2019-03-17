@@ -1,10 +1,26 @@
 import TruffleContract from 'truffle-contract'
 import EthJS from 'ethjs'
-import provider from './web3'
+import providerPromise from './web3'
 
-const eth = new EthJS(provider)
+let instance
+const getEthJsInstance = async () => {
+  if (!instance) {
+    const web3Provider = await providerPromise
 
-eth.setProvider(provider)
+    // stupid monkey patch for async send
+    if (typeof web3Provider.sendAsync !== 'function') {
+      console.log("missing async send, replacing with send")
+      web3Provider.sendAsync = web3Provider.send
+    }
+
+    const eth = new EthJS(web3Provider)
+    eth.setProvider(web3Provider)  
+  
+    instance = eth  
+  }
+
+  return instance
+}
 
 // returns TC wrapped and Provided contract
 export const getContract = async (name) => {
@@ -12,6 +28,7 @@ export const getContract = async (name) => {
   const contract = TruffleContract(artifact)
 
   try {
+    const provider = await providerPromise
     await contract.setProvider(provider)
     return contract
   } catch (e) {
@@ -30,7 +47,28 @@ export const setupContract = async (name) => {
   }
 }
 
-export const getAccounts = async () => await eth.accounts()
+export const getAccounts = async () => {
+  const provider = await getEthJsInstance()
+  const accounts = await provider.accounts()
+
+  return accounts
+}
+
+export const getBlockGasLimit = async () => {
+  const provider = await getEthJsInstance()
+  const block = await new Promise((accept, reject) => {
+    provider.getBlockByNumber("latest", true, (err, block) => {
+      if (err) reject(err)
+
+      accept(block)
+    })
+  })
+  
+  if (!block) return 5e6 // 5 million as a safe fallback?
+
+  // gaslimit should totally fit in a num
+  return block.gasLimit.toNumber() - 1e6
+}
 
 export const waitForEventOnce = (contract, event, args = {}) => new Promise((resolve, reject) => {
   const watcher = contract[event](args)
