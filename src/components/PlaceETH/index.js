@@ -367,7 +367,7 @@ class PlaceETH extends React.Component {
         const chunkY = Math.floor(change.y / 16)
         const chunkKey = `${chunkX},${chunkY}`
 
-        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.5) : Math.round(maxCommitCost * 1.5)
+        let gasCost = createdChunks.includes(chunkKey) ? Math.round(minCommitCost * 1.5) : Math.round(maxCommitCost * 3)
         if (gasCost + commitGas > blockGasLimit) {
           // don't force a change in if it clearly goes over block gas limit.
           changes.push(change)
